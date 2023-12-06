@@ -13,6 +13,7 @@ document.getElementById("checkout-btn").addEventListener("click", function () {
     price: document.getElementById("unit-price").innerHTML,
   };
 
+  console.log(orderData)
   // Peticion fetch a la ruta de prefencia (como llama al producto)
 
   fetch("http://localhost:8080/create_preference", {
@@ -23,6 +24,7 @@ document.getElementById("checkout-btn").addEventListener("click", function () {
     body: JSON.stringify(orderData),
   })
     .then(function (response) {
+      console.log(response) //hola
       return response.json();
     })
     .then(function (preference) {
