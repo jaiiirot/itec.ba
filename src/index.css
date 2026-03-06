@@ -35,6 +35,30 @@ body {
   background-color: #71717a;
 }
 
+/* ==========================================================================
+   OCULTAR SCROLLBARS GLOBALES (Pero mantener funcionalidad de scroll)
+   ========================================================================== */
+
+/* Para Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* Para Internet Explorer y Edge */
+* {
+  -ms-overflow-style: none;
+}
+
+/* Para Chrome, Safari y navegadores basados en WebKit */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Si tenías una clase .custom-scrollbar de antes, la reseteamos también */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* src/index.css */
 
 /* Efecto de ruido estático (Grain) para superponer a los blurs */

@@ -1,14 +1,16 @@
-import React from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Dashboard } from './pages/Dashboard';
-import { MisCursos } from './pages/MisCursos';
-import { CourseDetail } from './pages/CourseDetail';
-import { Explore } from './pages/Explore'; // <-- IMPORTA AQUÍ
-import { ChatPage } from './pages/ChatPage';
-import { GroupsPage } from './pages/GroupsPage'; // <-- IMPORTA AQUÍ
-import { IngresoPage } from './pages/IngresoPage';
-import { GradoPage } from './pages/GradoPage';
-import { NosotrosPage } from './pages/NosotrosPage';
+import React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { Dashboard } from "./pages/Dashboard";
+import { MisCursos } from "./pages/MisCursos";
+import { CourseDetail } from "./pages/CourseDetail";
+import { Explore } from "./pages/Explore"; // <-- IMPORTA AQUÍ
+import { ChatPage } from "./pages/ChatPage";
+import { GroupsPage } from "./pages/GroupsPage"; // <-- IMPORTA AQUÍ
+import { IngresoPage } from "./pages/IngresoPage";
+import { GradoPage } from "./pages/GradoPage";
+import { NosotrosPage } from "./pages/NosotrosPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Dashboard /> },
@@ -20,11 +22,19 @@ const router = createBrowserRouter([
   { path: "/ingreso", element: <IngresoPage /> },
   { path: "/grado", element: <GradoPage /> },
   { path: "/nosotros", element: <NosotrosPage /> },
-  { path: "*", element: <div className="text-white p-10">Página no encontrada</div> }
+  { path: "/perfil", element: <ProfilePage /> },
+  {
+    path: "*",
+    element: <div className="text-white p-10">Página no encontrada</div>,
+  },
 ]);
 
 export const App: React.FC = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 };
 
 export default App;

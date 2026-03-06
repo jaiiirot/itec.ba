@@ -1,6 +1,7 @@
 import React from 'react';
 import { SidebarItem } from '../molecules/SidebarItem';
 import logoItec from '../../assets/logo.png';
+import { useAuth } from '../../context/AuthContext'; // <-- Importa el hook
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const Icons = {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
+  const { isAuthenticated } = useAuth(); // <-- Usa el hook
   return (
     <>
       {/* Fondo oscuro para móvil (Cierra el menú al tocar afuera) */}
@@ -62,15 +64,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
             {/* Perfil (Con foto en vez de ícono) */}
             <SidebarItem 
               path="/perfil" 
-              label="Profile" 
-              onClick={closeMobile}
-              icon={
-                <img 
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100" 
-                  alt="Avatar" 
-                  className="w-6 h-6 rounded-full object-cover border border-gray-600"
-                />
-              } 
+              icon={<svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>} 
+              label={isAuthenticated ? "Mi Perfil" : "Iniciar Sesión"} 
+              onClick={closeMobile} 
             />
           </nav>
 

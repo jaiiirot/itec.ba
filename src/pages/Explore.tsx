@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { RESOURCES_DB } from '../data/resources';
+import { FileIcon } from '../components/atoms/FileIcon'; // <-- 1. IMPORTAMOS TU COMPONENTE
 
 const STORAGE_KEY_SAVED = 'itec_saved_resources';
 
@@ -29,10 +30,8 @@ export const Explore: React.FC = () => {
   // Filtrar los datos
   const filteredData = useMemo(() => {
     return RESOURCES_DB.filter(res => {
-      // 1. Filtro de Pestaña (Si estamos en "Mis Guardados", solo mostramos esos)
       if (activeTab === 'saved' && !savedIds.includes(res.id)) return false;
 
-      // 2. Filtros de Búsqueda
       const matchSearch = res.title.toLowerCase().includes(search.toLowerCase()) || 
                           res.subject.toLowerCase().includes(search.toLowerCase());
       const matchSpecialty = specialty === '' || res.specialty === specialty;
@@ -91,7 +90,6 @@ export const Explore: React.FC = () => {
         {/* BARRA DE HERRAMIENTAS Y FILTROS */}
         <div className="bg-itec-surface border border-itec-gray rounded-t-xl p-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Buscador Texto */}
             <div className="relative bg-itec-bg border border-itec-gray rounded-lg overflow-hidden flex items-center px-3 h-9 w-full md:w-64 focus-within:border-itec-blue transition-colors">
               <svg className="text-gray-400 mr-2 shrink-0" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input 
@@ -103,7 +101,6 @@ export const Explore: React.FC = () => {
               />
             </div>
 
-            {/* Select Especialidad */}
             <select 
               value={specialty} 
               onChange={(e) => setSpecialty(e.target.value)}
@@ -113,7 +110,6 @@ export const Explore: React.FC = () => {
               {specialties.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
 
-            {/* Select Tipo */}
             <select 
               value={type} 
               onChange={(e) => setType(e.target.value)}
@@ -148,7 +144,7 @@ export const Explore: React.FC = () => {
           </div>
         )}
 
-        {/* TABLA COMPACTA (Rediseño con bg-itec-bg y opacidades /10 /14 /20) */}
+        {/* TABLA COMPACTA */}
         <div className={`bg-itec-bg border border-itec-gray rounded-b-xl overflow-hidden flex-1 flex flex-col ${(search || specialty || type) ? 'border-t-0 rounded-t-none' : ''}`}>
           <div className="overflow-x-auto flex-1 custom-scrollbar">
             <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -166,12 +162,14 @@ export const Explore: React.FC = () => {
               <tbody>
                 {filteredData.map((row) => {
                   const isSaved = savedIds.includes(row.id);
+                  // Determinamos el tipo de ícono dinámicamente según la categoría de tu BD
+                  const isZipType = ['Software', 'Código', 'TP'].includes(row.type);
+                  
                   return (
                     <tr 
                       key={row.id} 
                       className={`transition-colors group hover:bg-white/[.04] ${isSaved ? 'bg-white/5' : 'even:bg-white/[.02]'}`}
                     >
-                      {/* Botón Favorito / Guardar (ALINEADO) */}
                       <td className="p-2 border-b border-white/10 text-center align-middle w-12">
                         <button 
                           onClick={() => toggleSave(row.id)}
@@ -179,11 +177,7 @@ export const Explore: React.FC = () => {
                           title={isSaved ? "Quitar de guardados" : "Guardar apunte"}
                         >
                           <svg 
-                            width="16" height="16" 
-                            viewBox="0 0 24 24" 
-                            fill={isSaved ? "#004093" : "none"} 
-                            stroke={isSaved ? "#004093" : "currentColor"} 
-                            strokeWidth="2" 
+                            width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? "#004093" : "none"} stroke={isSaved ? "#004093" : "currentColor"} strokeWidth="2" 
                             className={`transition-transform shrink-0 ${isSaved ? 'scale-110' : 'text-gray-500 group-hover:text-white'}`}
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -191,10 +185,10 @@ export const Explore: React.FC = () => {
                         </button>
                       </td>
                       
-                      {/* Ícono de Archivo y Título (ALINEADO) */}
+                      {/* 2. REEMPLAZO POR TU COMPONENTE FILEICON */}
                       <td className="p-2 border-b border-white/10 align-middle">
                         <div className="flex items-center gap-2.5">
-                          <svg className="text-gray-500 shrink-0" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+                          <FileIcon type={isZipType ? 'zip' : 'pdf'} />
                           <span className="text-[13px] font-medium text-itec-text group-hover:text-white transition-colors">{row.title}</span>
                         </div>
                       </td>
@@ -208,31 +202,13 @@ export const Explore: React.FC = () => {
                       </td>
                       <td className="p-2 text-[13px] text-gray-500 border-b border-white/10 align-middle">{row.date}</td>
                       
-{/* Acciones por Fila (SVGs corregidos con viewBox) */}
                       <td className="p-2 border-b border-white/10 text-right pr-4 align-middle">
                         <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                           <a 
-                             href={row.fileUrl} 
-                             target="_blank" 
-                             rel="noopener noreferrer" 
-                             className="inline-flex items-center justify-center w-7 h-7 bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors" 
-                             title="Abrir vista previa"
-                           >
-                             {/* Agregado viewBox="0 0 24 24" y strokeLinecap para mejor definición */}
-                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
-                             </svg>
+                           <a href={row.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-7 h-7 bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors" title="Abrir vista previa">
+                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
                            </a>
-                           <a 
-                             href={row.fileUrl} 
-                             download 
-                             className="inline-flex items-center justify-center w-7 h-7 bg-itec-blue hover:bg-blue-600 rounded-md text-white transition-colors shadow-md" 
-                             title="Descargar archivo"
-                           >
-                             {/* Agregado viewBox="0 0 24 24" y strokeLinecap para mejor definición */}
-                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                             </svg>
+                           <a href={row.fileUrl} download className="inline-flex items-center justify-center w-7 h-7 bg-itec-blue hover:bg-blue-600 rounded-md text-white transition-colors shadow-md" title="Descargar archivo">
+                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                            </a>
                         </div>
                       </td>
