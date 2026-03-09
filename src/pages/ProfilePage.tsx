@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom"; // <-- Importamos hooks de enrutamiento
 import { DashboardLayout } from "../components/templates/DashboardLayout";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../context/AuthContext";
@@ -10,58 +11,91 @@ import { BENEFITS_DATA } from "../data/profileData";
 import logoItec from '../assets/logo.png'; 
 
 export const ProfilePage: React.FC = () => {
-  const { user, login, logout, isAuthenticated } = useAuth();
+  const { user, loginWithGoogle, updateProfile, logout, isAuthenticated, loading } = useAuth();
   
-  // Estado local para simular si el usuario ya llenó el formulario de la tarjeta.
-  // Si user tiene dni, asumimos que ya tiene la tarjeta. Si no, le mostramos el form.
-  const hasCard = isAuthenticated && user && user.dni !== undefined && user.dni !== '';
+  // Hooks para redirigir la URL
+  const navigate = useNavigate();
+  const { username } = useParams(); // Obtenemos lo que dice la URL (ej: "jtumiricuellar")
+
+  const hasCard = isAuthenticated && user && user.dni && user.dni.trim() !== '';
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '', // Asumimos que viene de Google
-    legajo: '',
+    name: '',
+    email: '',
     dni: '',
     specialty: '',
     phone: ''
   });
   
   const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 1. Simula el Login con Google
-  const handleGoogleLogin = () => {
-    // Aquí iría tu lógica real de autenticación con Firebase/Auth0
-    // Por ahora, simulamos que Google nos devuelve el nombre y el correo.
-    login({ 
-      name: 'Estudiante', 
-      email: 'estudiante@frba.utn.edu.ar',
-      legajo: '', // Aún no lo sabemos
-      dni: '',    // Aún no lo sabemos
-      specialty: '',
-      phone: ''
-    });
-  };
+  // REDIRECCIÓN MÁGICA DE LA URL
+  useEffect(() => {
+    // Si está logueado y tenemos su correo...
+    if (isAuthenticated && user?.email) {
+      // Extraemos el usuario (ej: "jtumiricuellar" de "jtumiricuellar@frba...")
+      const expectedUsername = user.email.split('@')[0];
+      
+      // Si la URL en la que está NO coincide con su usuario (por ejemplo, está en "/perfil" plano)
+      if (username !== expectedUsername) {
+        // Lo empujamos a su URL personalizada
+        navigate(`/perfil/${expectedUsername}`, { replace: true });
+      }
+    } else if (!isAuthenticated && username) {
+      // Si no está logueado pero alguien intenta entrar a /perfil/juan, lo mandamos al login plano
+      navigate('/perfil', { replace: true });
+    }
+  }, [isAuthenticated, user, username, navigate]);
 
-  // 2. Envía el formulario para crear la tarjeta
-  const handleRequestCard = (e: React.FormEvent) => {
+
+  // Pre-llenar formulario
+  useEffect(() => {
+    if (user && !hasCard) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+      }));
+    }
+  }, [user, hasCard]);
+
+  const handleRequestCard = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    if (!formData.email.endsWith('@frba.utn.edu.ar')) {
-      setError('Debes utilizar tu correo institucional terminado en @frba.utn.edu.ar');
-      return;
-    }
-    
-    if (!formData.name || !formData.legajo || !formData.dni || !formData.phone) {
+    if (!formData.name || !formData.dni || !formData.phone || !formData.specialty) {
       setError('Por favor completa todos los campos obligatorios.');
       return;
     }
 
-    // Actualizamos el usuario en el contexto con todos sus datos nuevos
-    login({ ...user, ...formData } as User);
+    setIsSaving(true);
+    try {
+      await updateProfile({
+        name: formData.name,
+        dni: formData.dni,
+        specialty: formData.specialty,
+        phone: formData.phone
+      });
+    } catch (err) {
+      setError('Ocurrió un error al guardar tus datos.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-[70vh] items-center justify-center">
+          <div className="w-12 h-12 border-4 border-itec-gray border-t-itec-blue rounded-full animate-spin"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   // ==========================================
-  // VISTA 1: USUARIO NO LOGUEADO (LOGIN GOOGLE)
+  // VISTA 1: LOGIN
   // ==========================================
   if (!isAuthenticated) {
     return (
@@ -70,15 +104,15 @@ export const ProfilePage: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-itec-blue/20 blur-[100px] pointer-events-none rounded-full"></div>
           
           <div className="bg-itec-surface border border-itec-gray rounded-3xl p-10 max-w-md w-full text-center shadow-2xl relative z-10">
-            <div className="w-33 h-33 flex items-center justify-center mx-auto mb-6 ">
-               <img src={logoItec} alt="Logo" className="w-33 h-33 object-contain" />
+            <div className="w-20 h-20 bg-itec-blue rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(0,64,147,0.5)]">
+               <img src={logoItec} alt="Logo" className="w-12 h-12 object-contain" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Portal ITEC</h1>
             <p className="text-gray-400 text-sm mb-8">Accedé a tus beneficios y apuntes usando tu cuenta de la facultad.</p>
             
             <button 
-              onClick={handleGoogleLogin}
-              className="w-full bg-itec-red hover:bg-itec-red/20  font-bold py-3.5 px-4 rounded-xl cursor-pointer flex items-center justify-center gap-3 transition-colors shadow-lg"
+              onClick={loginWithGoogle}
+              className="w-full bg-white hover:bg-gray-200 text-black font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg cursor-pointer"
             >
               <div className="w-5 h-5 text-blue-600"><Icons type="google" /></div>
               Iniciar sesión con @frba
@@ -90,7 +124,7 @@ export const ProfilePage: React.FC = () => {
   }
 
   // ==========================================
-  // VISTA 2: LOGUEADO PERO SIN TARJETA (FORMULARIO)
+  // VISTA 2: FORMULARIO
   // ==========================================
   if (isAuthenticated && !hasCard) {
     return (
@@ -101,7 +135,7 @@ export const ProfilePage: React.FC = () => {
             
             <div className="relative z-10">
               <h2 className="text-2xl font-bold text-white mb-2 text-center">Solicitar TarjeTEC</h2>
-              <p className="text-xs text-gray-400 mb-6 text-center">Completá tus datos para generar tu credencial digital y acceder a los beneficios.</p>
+              <p className="text-xs text-gray-400 mb-6 text-center">Completá tus datos académicos para generar tu credencial digital y acceder a los beneficios de la UTN.</p>
               
               <form onSubmit={handleRequestCard} className="flex flex-col gap-4">
                 <div>
@@ -109,36 +143,44 @@ export const ProfilePage: React.FC = () => {
                   <Input fullWidth value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Correo Estudiantil *</label>
-                  <Input fullWidth placeholder="usuario@frba.utn.edu.ar" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Correo Estudiantil (Solo lectura)</label>
+                  <Input fullWidth disabled value={formData.email} className="py-2.5 bg-itec-bg text-sm border-itec-gray opacity-50 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">DNI *</label>
+                  <Input fullWidth placeholder="Sin puntos" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Legajo *</label>
-                    <Input fullWidth placeholder="Sin guiones" value={formData.legajo} onChange={e => setFormData({...formData, legajo: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">DNI *</label>
-                    <Input fullWidth placeholder="Sin puntos" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Especialidad</label>
-                    <Input fullWidth value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
+                    <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Carrera *</label>
+                    <select 
+                      value={formData.specialty} 
+                      onChange={e => setFormData({...formData, specialty: e.target.value})}
+                      className="w-full py-2.5 px-3 bg-itec-bg text-white text-sm border border-itec-gray rounded-xl focus:outline-none focus:border-itec-blue"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Sistemas">Ing. en Sistemas</option>
+                      <option value="Industrial">Ing. Industrial</option>
+                      <option value="Civil">Ing. Civil</option>
+                      <option value="Electrónica">Ing. Electrónica</option>
+                      <option value="Eléctrica">Ing. Eléctrica</option>
+                      <option value="Química">Ing. Química</option>
+                      <option value="Mecánica">Ing. Mecánica</option>
+                      <option value="Naval">Ing. Naval</option>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">Celular *</label>
-                    <Input fullWidth value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
+                    <Input fullWidth placeholder="+54 9 11..." value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
                   </div>
                 </div>
 
                 {error && <p className="text-itec-red text-xs font-bold text-center mt-2">{error}</p>}
                 
-                <Button type="submit" variant="primary" className="py-3.5 mt-4 font-bold text-sm uppercase tracking-wider bg-itec-blue hover:bg-blue-600 border-none transition-colors shadow-lg">
-                  Generar mi Credencial
+                <Button type="submit" disabled={isSaving} variant="primary" className="py-3.5 mt-4 font-bold text-sm uppercase tracking-wider bg-itec-blue hover:bg-blue-600 border-none transition-colors shadow-lg disabled:opacity-50 cursor-pointer">
+                  {isSaving ? 'Guardando...' : 'Generar mi Credencial'}
                 </Button>
-                <button type="button" onClick={logout} className="text-xs text-gray-500 hover:text-white mt-2">Cancelar y salir</button>
+                <button type="button" onClick={logout} className="text-xs text-gray-500 hover:text-white mt-2 cursor-pointer">Cancelar y salir</button>
               </form>
             </div>
           </div>
@@ -148,146 +190,81 @@ export const ProfilePage: React.FC = () => {
   }
 
   // ==========================================
-  // VISTA 3: USUARIO COMPLETO (PERFIL & TARJETA)
+  // VISTA 3: PERFIL Y TARJETA
   // ==========================================
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto pb-12">
-        {/* 1. HEADER PERFIL */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-itec-gray pb-6 gap-4">
           <div className="flex items-center gap-5">
+            {user?.photoURL && (
+               <div className="hidden sm:flex w-16 h-16 rounded-full bg-itec-sidebar border-2 border-itec-blue items-center justify-center overflow-hidden shadow-lg shrink-0">
+                  <img src={user.photoURL} alt="Perfil" className="w-full h-full object-cover" />
+               </div>
+            )}
             <div>
-              {/* Información personal */}
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">{user?.name}</h1>
               <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-400 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <div className="w-4 h-4">
-                    <Icons type="users" />
-                  </div>
-                  {user?.name}
-                </span>
+                <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="users" /></div>{user?.specialty}</span>
                 <span className="hidden md:block text-gray-600">•</span>
-                <span className="flex items-center gap-1.5">
-                  <div className="w-4 h-4">
-                    <Icons type="documentFill" />
-                  </div>
-                  {user?.dni}
-                </span>
+                <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="documentFill" /></div>{user?.dni}</span>
                 <span className="hidden md:block text-gray-600">•</span>
-                <span className="flex items-center gap-1.5">
-                  <div className="w-4 h-4">
-                    <Icons type="message" />
-                  </div>
-                  {user?.email}
-                </span>
+                <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="message" /></div>{user?.email}</span>
                 <span className="hidden md:block text-gray-600">•</span>
-                <span className="flex items-center gap-1.5">
-                  <div className="w-4 h-4">
-                    <Icons type="whatsapp" />
-                  </div>
-                  {user?.phone}
-                </span>
+                <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="whatsapp" /></div>{user?.phone}</span>
               </div>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="text-sm bg-itec-red px-4 py-2 rounded-lg hover:bg-itec-red-skye hover:text-white transition-colors font-medium cursor-pointer"
-          >
+          <button onClick={logout} className="text-sm bg-itec-red px-4 py-2 rounded-lg hover:bg-itec-red-skye hover:text-white transition-colors font-medium cursor-pointer shrink-0">
             Cerrar Sesión
           </button>
         </div>
 
-        {/* 2. TARJETA GIGANTE */}
         <div className="mb-12">{user && <TarjeTec user={user} />}</div>
 
-        {/* 3. BENEFICIOS */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Tus Beneficios TarjeTEC
-          </h2>
-          <p className="text-gray-400 text-sm mb-6">
-            Mostrá tu credencial virtual en los locales adheridos.
-          </p>
-
+          <h2 className="text-2xl font-bold text-white mb-1">Tus Beneficios TarjeTEC</h2>
+          <p className="text-gray-400 text-sm mb-6">Mostrá tu credencial virtual en los locales adheridos.</p>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Medrano */}
             <div className="lg:col-span-1">
               <h3 className="flex items-center gap-2 text-xs font-bold text-itec-blue-skye uppercase tracking-widest mb-4">
-                <div className="w-4 h-4">
-                  <Icons type="pin" />
-                </div>{" "}
-                Sede Medrano
+                <div className="w-4 h-4"><Icons type="pin" /></div> Sede Medrano
               </h3>
               <div className="flex flex-col gap-3">
                 {BENEFITS_DATA.medrano.map((b, i) => (
-                  <div
-                    key={i}
-                    className="border-l-2 border-itec-blue-skye pl-4 py-1 bg-transparent group cursor-pointer"
-                  >
-                    <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-itec-blue-skye transition-colors">
-                      {b.title}
-                    </h4>
-                    <p className="text-green-400 text-xs font-bold">
-                      {b.discount}
-                    </p>
-                    <span className="text-[10px] text-gray-500">
-                      {b.location}
-                    </span>
+                  <div key={i} className="border-l-2 border-itec-blue-skye pl-4 py-1 bg-transparent group cursor-pointer">
+                    <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-itec-blue-skye transition-colors">{b.title}</h4>
+                    <p className="text-green-400 text-xs font-bold">{b.discount}</p>
+                    <span className="text-[10px] text-gray-500">{b.location}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Campus & Digitales */}
             <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
               <div>
                 <h3 className="flex items-center gap-2 text-xs font-bold text-orange-400 uppercase tracking-widest mb-4">
-                  <div className="w-4 h-4">
-                    <Icons type="pin" />
-                  </div>{" "}
-                  Sede Campus
+                  <div className="w-4 h-4"><Icons type="pin" /></div> Sede Campus
                 </h3>
                 <div className="flex flex-col gap-3">
                   {BENEFITS_DATA.campus.map((b, i) => (
-                    <div
-                      key={i}
-                      className="border-l-2 border-orange-400 pl-4 py-1 bg-transparent group cursor-pointer"
-                    >
-                      <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-orange-400 transition-colors">
-                        {b.title}
-                      </h4>
-                      <p className="text-green-400 text-xs font-bold">
-                        {b.discount}
-                      </p>
-                      <span className="text-[10px] text-gray-500">
-                        {b.location}
-                      </span>
+                    <div key={i} className="border-l-2 border-orange-400 pl-4 py-1 bg-transparent group cursor-pointer">
+                      <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-orange-400 transition-colors">{b.title}</h4>
+                      <p className="text-green-400 text-xs font-bold">{b.discount}</p>
+                      <span className="text-[10px] text-gray-500">{b.location}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div>
                 <h3 className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-widest mb-4">
-                  <div className="w-4 h-4">
-                    <Icons type="lightning" />
-                  </div>{" "}
-                  Digitales
+                  <div className="w-4 h-4"><Icons type="lightning" /></div> Digitales
                 </h3>
                 <div className="flex flex-col gap-3">
                   {BENEFITS_DATA.digital.map((b, i) => (
-                    <div
-                      key={i}
-                      className="border-l-2 border-purple-400 pl-4 py-1 bg-transparent group cursor-pointer"
-                    >
-                      <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-purple-400 transition-colors">
-                        {b.title}
-                      </h4>
-                      <p className="text-purple-400 text-xs font-bold">
-                        {b.discount}
-                      </p>
-                      <span className="text-[10px] text-gray-500">
-                        {b.location}
-                      </span>
+                    <div key={i} className="border-l-2 border-purple-400 pl-4 py-1 bg-transparent group cursor-pointer">
+                      <h4 className="text-white font-bold text-sm mb-0.5 group-hover:text-purple-400 transition-colors">{b.title}</h4>
+                      <p className="text-purple-400 text-xs font-bold">{b.discount}</p>
+                      <span className="text-[10px] text-gray-500">{b.location}</span>
                     </div>
                   ))}
                 </div>

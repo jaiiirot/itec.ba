@@ -13,11 +13,10 @@ import { NosotrosPage } from "./pages/NosotrosPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ErrorPage } from "./pages/ErrorPage";
 
-// Refactorización: Usamos una ruta padre con children y errorElement
 const router = createBrowserRouter([
   {
     path: "/",
-    errorElement: <ErrorPage />, // <-- Atrapa 404s y Crashes en toda la app
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Dashboard /> },
       { path: "cursos", element: <MisCursos /> },
@@ -28,7 +27,10 @@ const router = createBrowserRouter([
       { path: "ingreso", element: <IngresoPage /> },
       { path: "grado", element: <GradoPage /> },
       { path: "nosotros", element: <NosotrosPage /> },
-      { path: "perfil", element: <ProfilePage /> },
+      
+      // RUTAS DEL PERFIL
+      { path: "perfil", element: <ProfilePage /> }, // Cuando entra directo a Iniciar Sesión
+      { path: "perfil/:username", element: <ProfilePage /> }, // Cuando ya tiene su usuario (Ej: /perfil/jtumiricuellar)
     ],
   },
 ]);
