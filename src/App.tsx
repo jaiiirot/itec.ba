@@ -11,6 +11,7 @@ import { IngresoPage } from "./pages/IngresoPage";
 import { GradoPage } from "./pages/GradoPage";
 import { NosotrosPage } from "./pages/NosotrosPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ErrorPage } from "./pages/ErrorPage";
 
 const router = createBrowserRouter([
   { path: "/", element: <Dashboard /> },
@@ -23,9 +24,7 @@ const router = createBrowserRouter([
   { path: "/grado", element: <GradoPage /> },
   { path: "/nosotros", element: <NosotrosPage /> },
   { path: "/perfil", element: <ProfilePage /> },
-  {
-    path: "*",
-    element: <div className="text-white p-10">Página no encontrada</div>,
+  { path: "*", element: <ErrorPage />,
   },
 ]);
 

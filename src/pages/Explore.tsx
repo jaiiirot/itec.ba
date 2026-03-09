@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { RESOURCES_DB } from '../data/resources';
-import { FileIcon } from '../components/atoms/FileIcon'; // <-- 1. IMPORTAMOS TU COMPONENTE
+import { FileIcon } from '../components/atoms/FileIcon'; 
+import { Icons } from '../components/atoms/Icons'; // <-- IMPORTAMOS EL SISTEMA DE ÍCONOS
 
 const STORAGE_KEY_SAVED = 'itec_saved_resources';
 
@@ -59,9 +60,11 @@ export const Explore: React.FC = () => {
         
         {/* HEADER SUPERIOR */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-itec-text tracking-tight">Material de Estudio</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Material de Estudio</h1>
           <button className="bg-itec-blue hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg">
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+            <div className="w-4 h-4">
+              <Icons type="uploadCloud" />
+            </div>
             Aportar archivo
           </button>
         </div>
@@ -70,13 +73,13 @@ export const Explore: React.FC = () => {
         <div className="flex items-center gap-6 border-b border-itec-gray mb-4 overflow-x-auto custom-scrollbar pb-px">
           <button 
             onClick={() => setActiveTab('all')}
-            className={`font-medium pb-3 px-1 whitespace-nowrap text-sm transition-colors ${activeTab === 'all' ? 'text-itec-text border-b-2 border-itec-blue' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`font-medium pb-3 px-1 whitespace-nowrap text-sm transition-colors ${activeTab === 'all' ? 'text-white border-b-2 border-itec-blue' : 'text-gray-500 hover:text-gray-300'}`}
           >
             Todos los aportes
           </button>
           <button 
             onClick={() => setActiveTab('saved')}
-            className={`font-medium pb-3 px-1 whitespace-nowrap text-sm transition-colors flex items-center gap-2 ${activeTab === 'saved' ? 'text-itec-text border-b-2 border-itec-blue' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`font-medium pb-3 px-1 whitespace-nowrap text-sm transition-colors flex items-center gap-2 ${activeTab === 'saved' ? 'text-white border-b-2 border-itec-blue' : 'text-gray-500 hover:text-gray-300'}`}
           >
             Mis Guardados
             {savedIds.length > 0 && (
@@ -91,20 +94,22 @@ export const Explore: React.FC = () => {
         <div className="bg-itec-surface border border-itec-gray rounded-t-xl p-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative bg-itec-bg border border-itec-gray rounded-lg overflow-hidden flex items-center px-3 h-9 w-full md:w-64 focus-within:border-itec-blue transition-colors">
-              <svg className="text-gray-400 mr-2 shrink-0" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <div className="w-3.5 h-3.5 text-gray-400 mr-2 shrink-0">
+                <Icons type="search" />
+              </div>
               <input 
                 type="text" 
                 placeholder="Buscar materia, tema..." 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-transparent text-sm text-itec-text w-full outline-none"
+                className="bg-transparent text-sm text-white w-full outline-none"
               />
             </div>
 
             <select 
               value={specialty} 
               onChange={(e) => setSpecialty(e.target.value)}
-              className="bg-itec-bg border border-itec-gray text-sm text-itec-text h-9 px-3 rounded-lg outline-none focus:border-itec-blue cursor-pointer appearance-none"
+              className="bg-itec-bg border border-itec-gray text-sm text-white h-9 px-3 rounded-lg outline-none focus:border-itec-blue cursor-pointer appearance-none"
             >
               <option value="">Especialidad: Todas</option>
               {specialties.map(s => <option key={s} value={s}>{s}</option>)}
@@ -113,7 +118,7 @@ export const Explore: React.FC = () => {
             <select 
               value={type} 
               onChange={(e) => setType(e.target.value)}
-              className="bg-itec-bg border border-itec-gray text-sm text-itec-text h-9 px-3 rounded-lg outline-none focus:border-itec-blue cursor-pointer appearance-none"
+              className="bg-itec-bg border border-itec-gray text-sm text-white h-9 px-3 rounded-lg outline-none focus:border-itec-blue cursor-pointer appearance-none"
             >
               <option value="">Tipo: Todos</option>
               {types.map(t => <option key={t} value={t}>{t}</option>)}
@@ -148,7 +153,7 @@ export const Explore: React.FC = () => {
         <div className={`bg-itec-bg border border-itec-gray rounded-b-xl overflow-hidden flex-1 flex flex-col ${(search || specialty || type) ? 'border-t-0 rounded-t-none' : ''}`}>
           <div className="overflow-x-auto flex-1 custom-scrollbar">
             <table className="w-full text-left border-collapse whitespace-nowrap">
-              <thead className="bg-[#1a1a1a] sticky top-0 z-10">
+              <thead className="bg-itec-sidebar sticky top-0 z-10">
                 <tr>
                   <th className="p-3 w-12 border-b border-itec-gray text-center"></th>
                   <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-itec-gray">Archivo</th>
@@ -162,7 +167,6 @@ export const Explore: React.FC = () => {
               <tbody>
                 {filteredData.map((row) => {
                   const isSaved = savedIds.includes(row.id);
-                  // Determinamos el tipo de ícono dinámicamente según la categoría de tu BD
                   const isZipType = ['Software', 'Código', 'TP'].includes(row.type);
                   
                   return (
@@ -170,26 +174,24 @@ export const Explore: React.FC = () => {
                       key={row.id} 
                       className={`transition-colors group hover:bg-white/[.04] ${isSaved ? 'bg-white/5' : 'even:bg-white/[.02]'}`}
                     >
+                      {/* BOTÓN GUARDAR (BOOKMARK) */}
                       <td className="p-2 border-b border-white/10 text-center align-middle w-12">
                         <button 
                           onClick={() => toggleSave(row.id)}
                           className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-white/10 transition-colors focus:outline-none"
                           title={isSaved ? "Quitar de guardados" : "Guardar apunte"}
                         >
-                          <svg 
-                            width="16" height="16" viewBox="0 0 24 24" fill={isSaved ? "#004093" : "none"} stroke={isSaved ? "#004093" : "currentColor"} strokeWidth="2" 
-                            className={`transition-transform shrink-0 ${isSaved ? 'scale-110' : 'text-gray-500 group-hover:text-white'}`}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                          </svg>
+                          <div className={`w-4 h-4 transition-transform ${isSaved ? 'text-itec-blue scale-110' : 'text-gray-500 group-hover:text-white'}`}>
+                            <Icons type={isSaved ? "bookmarkFilled" : "bookmark"} />
+                          </div>
                         </button>
                       </td>
                       
-                      {/* 2. REEMPLAZO POR TU COMPONENTE FILEICON */}
+                      {/* ARCHIVO CON FILEICON */}
                       <td className="p-2 border-b border-white/10 align-middle">
                         <div className="flex items-center gap-2.5">
                           <FileIcon type={isZipType ? 'zip' : 'pdf'} />
-                          <span className="text-[13px] font-medium text-itec-text group-hover:text-white transition-colors">{row.title}</span>
+                          <span className="text-[13px] font-medium text-white group-hover:text-white transition-colors">{row.title}</span>
                         </div>
                       </td>
 
@@ -202,13 +204,14 @@ export const Explore: React.FC = () => {
                       </td>
                       <td className="p-2 text-[13px] text-gray-500 border-b border-white/10 align-middle">{row.date}</td>
                       
+                      {/* ACCIONES (ABRIR Y DESCARGAR) */}
                       <td className="p-2 border-b border-white/10 text-right pr-4 align-middle">
                         <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
                            <a href={row.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-7 h-7 bg-white/10 hover:bg-white/20 rounded-md text-white transition-colors" title="Abrir vista previa">
-                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                             <div className="w-3.5 h-3.5"><Icons type="externalLink" /></div>
                            </a>
                            <a href={row.fileUrl} download className="inline-flex items-center justify-center w-7 h-7 bg-itec-blue hover:bg-blue-600 rounded-md text-white transition-colors shadow-md" title="Descargar archivo">
-                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                             <div className="w-3.5 h-3.5"><Icons type="download" /></div>
                            </a>
                         </div>
                       </td>
@@ -228,7 +231,8 @@ export const Explore: React.FC = () => {
             </table>
           </div>
           
-          <div className="bg-[#1a1a1a] p-3 text-xs text-gray-500 border-t border-itec-gray flex justify-between items-center">
+          {/* FOOTER TABLA */}
+          <div className="bg-itec-sidebar p-3 text-xs text-gray-500 border-t border-itec-gray flex justify-between items-center">
             <span>Mostrando {filteredData.length} resultados</span>
             <div className="flex gap-2">
               <button disabled className="px-2 py-1 bg-white/5 rounded text-gray-600">Anterior</button>

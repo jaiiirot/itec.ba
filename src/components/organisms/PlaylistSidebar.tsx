@@ -20,7 +20,7 @@ export const PlaylistSidebar: React.FC<PlaylistSidebarProps> = ({ videos, curren
       {/* Cabecera de la Playlist */}
       <div className="p-4 bg-itec-surface border-b border-itec-gray">
         <h3 className="font-bold text-lg text-itec-text leading-tight">
-          ✳️TEC ESPACIO DE CONSULTAS - SEMINARIO DE INGRESO
+          TEC ESPACIO DE CONSULTAS - SEMINARIO DE INGRESO
         </h3>
         <p className="text-xs text-gray-400 mt-1">
           Lista de reproducción • {videos.length} videos

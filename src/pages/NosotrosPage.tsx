@@ -2,21 +2,20 @@ import React from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
 import { Input } from '../components/atoms/Input';
+import { Icons } from '../components/atoms/Icons';
 import { NOSOTROS_DATA } from '../data/nosotrosLinks';
+import logoItec from '../assets/logo.png'; // <-- IMPORTAMOS EL LOGO OFICIAL
 
-// Función Helper para renderizar los iconos de documentos
+// Función Helper para renderizar los iconos usando el componente Icons
 const renderIcon = (type: string, colorClass: string) => {
-  const baseClasses = `${colorClass} w-10 h-10 mb-3 group-hover:scale-110 transition-transform`;
-  switch (type) {
-    case 'document':
-      return <svg className={baseClasses} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>;
-    case 'spreadsheet':
-      return <svg className={baseClasses} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M8 13h8M8 17h8M8 9h2"></path></svg>;
-    case 'folder':
-      return <svg className={baseClasses} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>;
-    default:
-      return null;
-  }
+  // Envolvemos el Icons en un div que controle su tamaño (w-10 h-10) y animaciones
+  const containerClasses = `w-10 h-10 mb-3 group-hover:scale-110 transition-transform ${colorClass}`;
+  
+  return (
+    <div className={containerClasses}>
+      <Icons type={type} />
+    </div>
+  );
 };
 
 export const NosotrosPage: React.FC = () => {
@@ -24,23 +23,36 @@ export const NosotrosPage: React.FC = () => {
     <DashboardLayout>
       <div className="max-w-4xl mx-auto pb-10">
         
-        {/* HEADER */}
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-itec-blue text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4 shadow-[0_0_30px_rgba(0,64,147,0.5)]">I</div>
-          <h1 className="text-4xl font-bold text-white mb-2">Acerca de Nosotros</h1>
-          <p className="text-gray-400 text-sm">Estudiantes dedicados a defender tus derechos en la UTNBA.</p>
+        {/* HEADER CON LOGO */}
+        <div className="text-center mb-12 mt-4">
+          <div className="relative w-28 h-28 mx-auto mb-6">
+            {/* Efecto de resplandor detrás del logo */}
+            <div className="absolute inset-0 bg-itec-blue/40 blur-2xl rounded-full"></div>
+            {/* Contenedor del logo */}
+            <div className="relative w-full h-full bg-[#050505] border border-itec-gray rounded-full flex items-center justify-center shadow-2xl p-1">
+              <img 
+                src={logoItec} 
+                alt="ITEC Logo" 
+                className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight">Acerca de TEC</h1>
+          <p className="text-gray-400 text-sm md:text-base max-w-lg mx-auto ">
+            Estudiantes de ingeniería dedicados a acompañarte, informarte y defender tus derechos en la UTN BA.
+          </p>
         </div>
 
         {/* LINKS INSTITUCIONALES */}
         <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-4 text-center">Transparencia y Documentos</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-14">
           {NOSOTROS_DATA.map(link => (
             <a 
               key={link.id} 
               href={link.url} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className={`bg-[#111] border border-[#262626] ${link.hoverClass} rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all group hover:-translate-y-1 hover:shadow-xl`}
+              className={`bg-itec-surface border border-itec-gray ${link.hoverClass} rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all group hover:-translate-y-1 hover:shadow-xl`}
             >
               {renderIcon(link.iconType, link.colorClass)}
               <h3 className="font-bold text-white mb-1 group-hover:text-white">{link.title}</h3>
@@ -61,20 +73,20 @@ export const NosotrosPage: React.FC = () => {
             <form className="flex flex-col gap-5">
               <div>
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Nombre Completo</label>
-                <Input fullWidth placeholder="Ej: Juan Pérez" className="py-3 bg-[#111] text-sm" />
+                <Input fullWidth placeholder="Ej: Juan Pérez" className="py-3 bg-itec-bg border-itec-gray focus:border-itec-blue text-sm text-white transition-colors" />
               </div>
               
               <div>
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Teléfono (WhatsApp)</label>
-                <Input fullWidth placeholder="+54 9 11..." className="py-3 bg-[#111] text-sm" />
+                <Input fullWidth placeholder="+54 9 11..." className="py-3 bg-itec-bg border-itec-gray focus:border-itec-blue text-sm text-white transition-colors" />
               </div>
               
               <div>
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 ml-1">Especialidad</label>
-                <Input fullWidth placeholder="Ej: Ingeniería en Sistemas" className="py-3 bg-[#111] text-sm" />
+                <Input fullWidth placeholder="Ej: Ingeniería en Sistemas" className="py-3 bg-itec-bg border-itec-gray focus:border-itec-blue text-sm text-white transition-colors" />
               </div>
               
-              <Button variant="primary" className="py-3.5 mt-4 font-bold text-sm uppercase tracking-wider bg-white text-black hover:bg-gray-200 border-none transition-colors shadow-lg">
+              <Button variant="primary" className="py-3.5 mt-4 font-bold text-sm uppercase tracking-wider bg-itec-gray hover:bg-itec-gray/20 border-none transition-colors shadow-lg">
                 Enviar mis datos
               </Button>
             </form>

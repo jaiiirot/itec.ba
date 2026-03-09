@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
+import { Icons } from '../components/atoms/Icons'; 
 import { FAQ_DATABASE, FALLBACK_ANSWER, ITEC_FOOTER } from '../data/faqs';
-import { usePageTitle } from '../hooks/usePageTitle'; // <-- 1. Importar
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const STORAGE_KEY_SESSIONS = 'itec_chat_sessions';
 
@@ -18,7 +19,6 @@ interface ChatSession {
   messages: Message[];
 }
 
-// Botón de Sugerencias Iniciales
 const INITIAL_SUGGESTIONS = [
   "¿Cuándo me anoto a cursar?",
   "¿Cómo veo los grupos de WhatsApp?",
@@ -27,7 +27,7 @@ const INITIAL_SUGGESTIONS = [
 
 export const ChatPage: React.FC = () => {
   usePageTitle('Preguntas Frecuentes');
-  // 1. Estado de las Sesiones
+  
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_SESSIONS);
     if (saved) return JSON.parse(saved);
@@ -40,7 +40,7 @@ export const ChatPage: React.FC = () => {
 
   const [activeSessionId, setActiveSessionId] = useState<string>(sessions[0]?.id || '');
   const [input, setInput] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Para Móviles
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
@@ -53,7 +53,6 @@ export const ChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeSession?.messages]);
 
-  // Actualizar la sesión actual
   const updateActiveSession = (newMessages: Message[], newTitle?: string) => {
     setSessions(prev => prev.map(session => 
       session.id === activeSessionId 
@@ -84,20 +83,36 @@ export const ChatPage: React.FC = () => {
     }
   };
 
-  // BUSCADOR EN BASE DE DATOS LOCAL
+  // =========================================================
+  // HELPER PARA NORMALIZAR TEXTO (Quita tildes y signos)
+  // =========================================================
+  const normalizeText = (text: string) => {
+    return text
+      .toLowerCase()
+      .normalize("NFD") // Descompone caracteres con tildes
+      .replace(/[\u0300-\u036f]/g, "") // Elimina las tildes
+      .replace(/[¿?¡!.,]/g, "") // Elimina signos de puntuación comunes
+      .trim();
+  };
+
   const searchFaqAnswer = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
+    // Normalizamos la consulta del usuario (Ej: "¿Cuándo me anoto?" -> "cuando me anoto")
+    const cleanQuery = normalizeText(query);
     
-    // Busca si alguna palabra clave coincide con el texto del usuario
     for (const faq of FAQ_DATABASE) {
-      if (faq.keywords.some(kw => lowerQuery.includes(kw))) {
+      // Normalizamos también las palabras clave de la base de datos por si acaso
+      const match = faq.keywords.some(kw => {
+        const cleanKeyword = normalizeText(kw);
+        return cleanQuery.includes(cleanKeyword);
+      });
+
+      if (match) {
         return faq.answer;
       }
     }
     return FALLBACK_ANSWER;
   };
 
-  // Enviar mensaje al bot local
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
     setInput('');
@@ -108,8 +123,6 @@ export const ChatPage: React.FC = () => {
     }
 
     const userMessage: Message = { role: 'user', text };
-    
-    // Obtenemos la respuesta sin IA
     const botAnswer = searchFaqAnswer(text) + ITEC_FOOTER;
     const botMessage: Message = { role: 'model', text: botAnswer };
 
@@ -118,27 +131,24 @@ export const ChatPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      {/* Magia CSS: El -m-4 md:-m-8 rompe el padding del DashboardLayout 
-        para que la vista ocupe absolutamente todo el espacio, como Gemini web. 
-      */}
         <div className="flex h-[calc(100vh-70px)] md:h-[calc(100vh-2px)] w-full -m-4 md:-m-8 overflow-hidden relative">
+        
         {/* === SIDEBAR (Historial) === */}
-        {/* Fondo negro semitransparente en móvil */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-itec-bg z-40 md:hidden" 
+            className="fixed inset-0 bg-itec-bg/80 backdrop-blur-sm z-40 md:hidden" 
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
         
         <div className={`
-          absolute md:relative z-50 h-full w-72 bg-itec-bg flex flex-col transition-transform duration-300
+          absolute md:relative z-50 h-full w-72 bg-itec-sidebar flex flex-col transition-transform duration-300 border-r border-itec-gray
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
-          <div className="p-4 border-b border-[#262626] flex justify-between items-center">
+          <div className="p-4 border-b border-itec-gray flex justify-between items-center">
             <button 
               onClick={createNewChat}
-              className="flex-1 bg-white hover:bg-gray-200 text-black font-semibold py-2.5 px-4 rounded-xl flex items-center gap-3 transition-colors text-sm"
+              className="flex-1 bg-itec-gray hover:bg-itec-gray/33 hover:cursor-pointer font-semibold py-2.5 px-4 rounded-xl flex items-center gap-3 transition-colors text-sm"
             >
               <span className="text-xl leading-none">+</span> Nueva conversación
             </button>
@@ -152,7 +162,7 @@ export const ChatPage: React.FC = () => {
                 key={session.id}
                 onClick={() => { setActiveSessionId(session.id); setIsSidebarOpen(false); }}
                 className={`w-full group text-left px-3 py-2.5 rounded-xl text-sm mb-1 cursor-pointer flex justify-between items-center transition-colors ${
-                  activeSessionId === session.id ? 'bg-[#2a2a2a] text-white font-medium' : 'text-gray-400 hover:bg-[#1a1a1a]'
+                  activeSessionId === session.id ? 'bg-itec-gray text-white font-medium' : 'text-gray-400 hover:bg-itec-surface'
                 }`}
               >
                 <span className="truncate flex-1 pr-2">
@@ -160,10 +170,10 @@ export const ChatPage: React.FC = () => {
                 </span>
                 <button 
                   onClick={(e) => deleteChat(session.id, e)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-500 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-itec-red transition-opacity w-4 h-4 shrink-0"
                   title="Borrar chat"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  <Icons type="trash" />
                 </button>
               </div>
             ))}
@@ -173,10 +183,10 @@ export const ChatPage: React.FC = () => {
         {/* === MAIN CHAT AREA === */}
         <div className="flex-1 flex flex-col relative w-full">
           
-          {/* Header móvil para abrir el menú */}
-          <div className="md:hidden flex items-center p-4 border-b border-[#262626] bg-[#0a0a0a]">
-             <button onClick={() => setIsSidebarOpen(true)} className="mr-3 text-white">
-               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          {/* Header móvil */}
+          <div className="md:hidden flex items-center p-4 border-b border-itec-gray bg-itec-sidebar">
+             <button onClick={() => setIsSidebarOpen(true)} className="mr-3 text-white w-6 h-6">
+               <Icons type="menu" />
              </button>
              <h2 className="font-bold text-itec-text">ITEC Bot</h2>
           </div>
@@ -187,14 +197,13 @@ export const ChatPage: React.FC = () => {
               {activeSession?.messages.map((msg, index) => (
                 <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   
-                  {/* Avatar ITEC (Solo si es Bot) */}
                   {msg.role === 'model' && (
                     <div className="w-8 h-8 rounded-full bg-itec-blue flex items-center justify-center font-bold text-white text-xs mr-3 shrink-0 mt-1">I</div>
                   )}
 
-                  <div className={`p-4 rounded-2xl text-[15px] ${
+                  <div className={`p-4 rounded-2xl text-[15px] shadow-sm ${
                     msg.role === 'user' 
-                      ? 'bg-[#2a2a2a] text-white rounded-tr-sm max-w-[85%]' 
+                      ? 'bg-itec-gray text-white rounded-tr-sm max-w-[85%] border border-itec-gray' 
                       : 'text-gray-300 w-full md:max-w-[90%]'
                   }`}>
                     {msg.role === 'user' ? (
@@ -205,8 +214,8 @@ export const ChatPage: React.FC = () => {
                           strong: ({...props}) => <span className="font-bold text-white" {...props} />,
                           p: ({...props}) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
                           ul: ({...props}) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
-                          a: ({...props}) => <a className="text-blue-400 font-medium hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                          hr: ({...props}) => <hr className="border-[#333] my-4" {...props} />
+                          a: ({...props}) => <a className="text-itec-blue-skye font-medium hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                          hr: ({...props}) => <hr className="border-itec-gray my-4" {...props} />
                         }}
                       >
                         {msg.text}
@@ -219,7 +228,7 @@ export const ChatPage: React.FC = () => {
             </div>
           </div>
 
-          {/* SUGERENCIAS (Solo visibles al inicio de un chat nuevo) */}
+          {/* SUGERENCIAS */}
           {activeSession?.messages.length === 1 && (
             <div className="absolute bottom-36 w-full flex justify-center px-4">
                <div className="flex flex-wrap gap-2 justify-center max-w-3xl w-full">
@@ -227,7 +236,7 @@ export const ChatPage: React.FC = () => {
                     <button 
                       key={i}
                       onClick={() => handleSendMessage(sug)}
-                      className="bg-[#1a1a1a] border border-[#333] text-gray-300 hover:bg-[#2a2a2a] hover:text-white transition-colors px-4 py-2 rounded-xl text-sm shadow-sm"
+                      className="bg-itec-surface border border-itec-gray text-gray-300 hover:bg-itec-gray hover:text-white transition-colors px-4 py-2 rounded-xl text-sm shadow-sm"
                     >
                       {sug}
                     </button>
@@ -236,12 +245,12 @@ export const ChatPage: React.FC = () => {
             </div>
           )}
 
-          {/* INPUT FIXED AL FONDO (Estilo Gemini) */}
+          {/* INPUT FIXED AL FONDO */}
           <div className="absolute bottom-0 w-full bg-gradient-to-t from-itec-bg via-itec-bg to-transparent pb-6 pt-10 px-4 flex justify-center">
             <div className="w-full max-w-3xl">
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleSendMessage(input); }} 
-                className="flex items-center gap-3 bg-[#1a1a1a] border border-[#333] p-2 rounded-2xl shadow-xl focus-within:border-[#555] transition-colors"
+                className="flex items-center gap-3 bg-itec-surface border border-itec-gray p-2 rounded-2xl shadow-xl focus-within:border-itec-blue transition-colors"
               >
                 <input
                   type="text"
@@ -253,9 +262,11 @@ export const ChatPage: React.FC = () => {
                 <Button 
                   type="submit" 
                   disabled={!input.trim()} 
-                  className={`rounded-xl px-4 py-3 flex items-center justify-center transition-all ${input.trim() ? 'bg-white text-black hover:bg-gray-200' : 'bg-[#333] text-gray-500 cursor-not-allowed'}`}
+                  className={`rounded-xl px-4 py-3 flex items-center justify-center transition-all ${input.trim() ? 'bg-white text-black hover:bg-gray-200' : 'bg-itec-gray text-gray-500 cursor-not-allowed'}`}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <div className="w-5 h-5">
+                     <Icons type="send" />
+                  </div>
                 </Button>
               </form>
               <p className="text-center text-[11px] text-gray-500 mt-3">

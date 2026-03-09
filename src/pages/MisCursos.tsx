@@ -21,7 +21,7 @@ export const MisCursos: React.FC = () => {
           >
             <CourseCard 
               title={curso.title} 
-              description={`${curso.description} (${curso.videoCount} videos)`} 
+              description={curso.description} 
               progress={curso.progress} 
               imageUrl={curso.imageUrl} 
             />

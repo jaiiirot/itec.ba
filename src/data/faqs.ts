@@ -198,9 +198,33 @@ export const FAQ_DATABASE: FAQ[] = [
   {
     keywords: ["ver notas", "donde ver notas","notas"],
     answer: "Podés ver tus **notas, historial académico y estado de materias** desde el sistema SIGA.\n\nIngresá a:\n\n[https://siga.frba.utn.edu.ar](https://siga.frba.utn.edu.ar/)"
-  }
-];
+  },
 
+
+  // ==========================================
+  // INFORMACIÓN 2026 - TRÁMITES E INSCRIPCIONES (AGREGADA)
+  // ==========================================
+  {
+    keywords: ["fechas importantes", "inscripciones especiales 2026", "19 de marzo", "20 de marzo", "inscripciones 2026"],
+    answer: "Atención: hay **inscripciones por CASOS ESPECIALES para el 1er cuatrimestre 2026 los días 19 y 20 de marzo de 2026**. \n\n- **19 de marzo de 2026:** Cambio de Especialidad, Simultaneidad de Carreras y Pases de Regional. \n- **20 de marzo de 2026:** Ingresos, Equivalencias, Revisión y Agregado de Materias y Cursado sin Pase (ver requisitos). \n\nSi tenés trámites sin finalizar, debés completar los formularios indicados por la Dirección de Alumnos antes de esas fechas. Consultá los formularios oficiales y los cronogramas en la web de la facultad: [https://frba.utn.edu.ar](https://frba.utn.edu.ar/) y en el sistema SIGA: [https://siga.frba.utn.edu.ar](https://siga.frba.utn.edu.ar/)."
+  },
+  {
+    keywords: ["inscripcion cuatrimestre", "¿cuándo me anoto?", "cuando me anoto a cursar", "fechas inscripcion"],
+    answer: "La inscripción a cursadas se realiza desde **SIGA**: [https://siga.frba.utn.edu.ar](https://siga.frba.utn.edu.ar/). \n\n- En términos generales las inscripciones del **primer cuatrimestre** suelen abrir entre **febrero y marzo** y para el **segundo cuatrimestre** entre **julio y agosto**. \n- Para el **1er cuatrimestre 2026** hay un cronograma de inscripciones especiales: **19 y 20 de marzo de 2026** (ver detalle en la publicación de trámites). \n\nSi tenés trámites administrativos pendientes (pases, equivalencias, cambio de especialidad, etc.), muchas veces te piden completar antes un formulario o presentar documentación en Medrano 951 — Oficina 311. Recomendación práctica: 1) revisá el calendario en SIGA, 2) fijate las fechas publicadas en la web oficial de la FRBA y 3) completá los formularios indicados si corresponde."
+  },
+  {
+    keywords: ["grupos whatsapp", "ver grupos whatsapp", "como veo los grupos de whatsapp", "whatsapp cátedra"],
+    answer: "La facultad **no suele mantener una lista pública centralizada de grupos de WhatsApp**. Los grupos suelen organizarse por cada cátedra o comisión y los métodos habituales para obtener el enlace son:\n\n1. **Web de ITEC grupos estudiantiles**: muchos estudiantes comparten los grupos de comisiones en la web [Grupos de WA](/grupos).\n2. **Aula Virtual / Aula de la cátedra**: muchas cátedras publican el enlace o facilitan contacto al inicio de cursada. Revisá tu espacio en el Aula Virtual: [https://aulavirtual.frba.utn.edu.ar](https://aulavirtual.frba.utn.edu.ar/).\n3. **Preguntar al docente o ayudantes** durante la primer clase o por el canal de consultas de la materia.\n4. **Delegados y compañeros**: el representante de comisión o los estudiantes suelen crear y compartir los enlaces.\n5. **Foros y canales estudiantiles** (p. ej. la sección de comunidad o [Explorar Aportes](/explore) en el sitio estudiantil) o redes de la comunidad (Instagram @itecba). \n\nSi no encontrás el grupo, podés escribir a **alumnos@frba.utn.edu.ar** para consultar canales oficiales o pedir orientación sobre dónde buscar los canales de comunicación de la cátedra. Consejo de seguridad: no compartas datos personales sensibles en grupos y verificá la fuente del enlace antes de unirte."
+  },
+  {
+    keywords: ["formularios inscripcion", "formularios pases", "formulario cursado sin pase"],
+    answer: "Algunos trámites requieren completar formularios online antes de inscribirte. Ejemplos (publicados por la Dirección de Alumnos FRBA):\n\n- **Formulario para pases provenientes de otras FR**: https://docs.google.com/forms/d/e/1FAIpQLSdDVKtn8zAR6QGu1zsqg9a1MxeEU7jihDrOvk02aW4zTf-J0A/viewform?pli=1\n- **Formulario para simultaneidad entre regionales**: https://forms.gle/AGMocwDzLcbMQPwv5\n- **Formulario de Cursado sin Pase (cuando aplica)**: https://docs.google.com/forms/d/e/1FAIpQLSff2Eunfd-e7PKfErqEWYg1BE_rxI0kyQwreX8gSete7RUrfg/viewform\n\nSiempre verificá en la publicación oficial de trámites o contactá a la Dirección de Alumnos antes de completar un formulario."
+  },
+  {
+    keywords: ["contacto frba", "telefono alumnos", "direccion medrano", "mail alumnos"],
+    answer: "Datos de contacto oficiales (según comunicación vigente):\n\n- **Mail Dirección de Alumnos:** alumnos@frba.utn.edu.ar\n- **Medrano 951 – Oficina 311 (Almagro, CABA)** — Tel: (54 11) 4867-7500 — Interno 7548/7733 — Atención: lunes a viernes de 10 a 13 y de 14 a 20\n- **Campus Mozart 2300 (Villa Lugano, CABA) – Oficina 11** — Tel: (54 11) 4638-8100/8838 — Interno 7148 — Atención: lunes a viernes de 14 a 20\n\nPara trámites presenciales y entrega de documentación física, consultá siempre horarios y requisitos antes de acercarte."
+  }
+]
 export const FALLBACK_ANSWER = "Lo siento, no tengo una respuesta automática para esa consulta específica.\n\nTip: probá usar palabras clave como **siga**, **parciales**, **inscripción**, **campus** o el nombre de tu **materia**.";
 
 export const ITEC_FOOTER = "\n\n---\nRecuerda que siempre puedes consultar en nuestros grupos o en nuestro [Instagram oficial @itecba](https://instagram.com/itecba).";

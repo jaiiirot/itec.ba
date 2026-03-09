@@ -19,7 +19,7 @@ export const GradoPage: React.FC = () => {
   const handleSelect = (id: string) => {
     // Verificamos si la carrera existe en la base de datos de correlativas
     if (!PLANES_DB[id]) {
-      alert(`El mapa interactivo para ${id.toUpperCase()} estará disponible próximamente. Probá con "Sistemas" o "Eléctrica".`);
+      alert(`El mapa interactivo para ${id.toUpperCase()} estará disponible próximamente.`);
       return;
     }
     setSelectedCareer(id);

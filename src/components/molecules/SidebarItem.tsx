@@ -5,11 +5,32 @@ interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   path: string;
-  badge?: number | 'dot'; // Soporta un número (ej: 2) o un puntito rojo
+  badge?: number | 'dot'; 
+  disabled?: boolean; // <-- NUEVA PROP
   onClick?: () => void;
 }
 
-export const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, path, badge, onClick }) => {
+export const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, path, badge, disabled = false, onClick }) => {
+  // Si está deshabilitado, renderizamos un div en lugar de un NavLink
+  if (disabled) {
+    return (
+      <div
+        className="flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group/item opacity-50 cursor-default text-gray-500 relative"
+        title="Próximamente" // Tooltip nativo del navegador
+      >
+        <div className="relative shrink-0">
+          <div>{icon}</div>
+        </div>
+
+        <span className="whitespace-nowrap overflow-hidden transition-all duration-300 max-w-50 opacity-100 md:max-w-0 md:opacity-0 group-hover/sidebar:max-w-50 group-hover/sidebar:opacity-100 flex flex-col">
+          <span className="">{label}</span>
+          <span className="text-[9px] uppercase tracking-widest text-itec-blue-skye font-bold absolute -bottom-1">Próximamente</span>
+        </span>
+      </div>
+    );
+  }
+
+  // Comportamiento normal si NO está deshabilitado
   return (
     <NavLink
       to={path}
@@ -21,13 +42,11 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, path, bad
     >
       {({ isActive }) => (
         <>
-          <div className="relative flex-shrink-0">
-            {/* Animación sutil al hacer hover en el ítem */}
+          <div className="relative shrink-0">
             <div className={`transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-white' : ''}`}>
               {icon}
             </div>
             
-            {/* Lógica de Notificaciones (Badge) */}
             {badge === 'dot' && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 border-2 border-itec-bg rounded-full"></span>
             )}
@@ -38,12 +57,7 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, path, bad
             )}
           </div>
 
-          {/* MAGIA RESPONSIVE Y HOVER:
-            - Mobile: Visible por defecto (max-w-[200px] opacity-100)
-            - Desktop (md): Oculto por defecto (md:max-w-0 md:opacity-0)
-            - Desktop Hover (group-hover/sidebar): Visible (group-hover/sidebar:max-w-[200px] ...)
-          */}
-          <span className="whitespace-nowrap overflow-hidden transition-all duration-300 max-w-[200px] opacity-100 md:max-w-0 md:opacity-0 group-hover/sidebar:max-w-[200px] group-hover/sidebar:opacity-100">
+          <span className="whitespace-nowrap overflow-hidden transition-all duration-300 max-w-50 opacity-100 md:max-w-0 md:opacity-0 group-hover/sidebar:max-w-50 group-hover/sidebar:opacity-100">
             {label}
           </span>
         </>

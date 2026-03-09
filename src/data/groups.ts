@@ -9,6 +9,24 @@ export interface GroupData {
 }
 
 export const GROUPS_DB: GroupData[] = [
+  // ==========================================
+  // COMUNIDADES GENERALES (Oficiales ITEC)
+  // ==========================================
+  { id: 'itec_basicas_1', carrera: 'homogeneas1', nivel: 'General', materia: 'Comunidad Básicas I', comision: 'General', link: 'https://chat.whatsapp.com/HPEFNAHIqIIABpna0p0Mjj', tipo: 'Oficial' },
+  { id: 'itec_basicas_2', carrera: 'homogeneas2', nivel: 'General', materia: 'Comunidad Básicas II', comision: 'General', link: 'https://chat.whatsapp.com/FyDAM5IZERvC7KmhwetR2I', tipo: 'Oficial' },
+  { id: 'itec_civil', carrera: 'civil', nivel: 'General', materia: 'Comunidad Civil', comision: 'General', link: 'https://chat.whatsapp.com/JKiTa2rg5RVGdQESAhx9sm', tipo: 'Oficial' },
+  { id: 'itec_electrica', carrera: 'electrica', nivel: 'General', materia: 'Comunidad Energía Eléctrica', comision: 'General', link: 'https://chat.whatsapp.com/JCO7s0cskas7q3NyCB2ivA', tipo: 'Oficial' },
+  { id: 'itec_electronica', carrera: 'electronica', nivel: 'General', materia: 'Comunidad Electrónica', comision: 'General', link: 'https://chat.whatsapp.com/KTsbXqiRbRx26sBuQ3Z6UV', tipo: 'Oficial' },
+  { id: 'itec_industrial', carrera: 'industrial', nivel: 'General', materia: 'Comunidad Industrial', comision: 'General', link: 'https://chat.whatsapp.com/CUyNKsby41tJczZmjaOv7D', tipo: 'Oficial' },
+  { id: 'itec_mecanica', carrera: 'mecanica', nivel: 'General', materia: 'Comunidad Mecánica', comision: 'General', link: 'https://chat.whatsapp.com/DVuWxXlVEmsFDh6xAp0Uj0', tipo: 'Oficial' },
+  { id: 'itec_naval', carrera: 'naval', nivel: 'General', materia: 'Comunidad Naval (No Formal)', comision: 'General', link: 'https://chat.whatsapp.com/Jrlu9mMUZgn2aEss3nJsbg', tipo: 'Oficial' },
+  { id: 'itec_quimica', carrera: 'quimica', nivel: 'General', materia: 'Comunidad Química', comision: 'General', link: 'https://chat.whatsapp.com/CGSo9jNg6EAl1lbPbmGGK2', tipo: 'Oficial' },
+  { id: 'itec_sistemas', carrera: 'sistemas', nivel: 'General', materia: 'Comunidad Sistemas', comision: 'General', link: 'https://chat.whatsapp.com/Ktq8BKAZma97cZE9VR228T', tipo: 'Oficial' },
+  { id: 'itec_sistemas_materias', carrera: 'sistemas', nivel: 'General', materia: 'Materias de Sistemas', comision: 'General', link: 'https://chat.whatsapp.com/Dknxt7vGxnEAegm8VqJJG6', tipo: 'Oficial' },
+
+  // ==========================================
+  // GRUPOS POR MATERIA / COMISIÓN
+  // ==========================================
   // Sistemas
   { id: '1', carrera: 'sistemas', nivel: '1', materia: 'Análisis Matemático I', comision: 'K1043', link: '#', tipo: 'Oficial' },
   { id: '2', carrera: 'sistemas', nivel: '1', materia: 'Álgebra y Geometría Analítica', comision: 'K1043', link: '#', tipo: 'Oficial' },
