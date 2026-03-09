@@ -4,18 +4,24 @@ import { UniversalSearch } from "../components/organisms/UniversalSearch";
 import { HubNavigation } from "../components/organisms/HubNavigation";
 import { InstagramCard } from "../components/molecules/InstagramCard";
 import { CAMPUS_LIFE_LINKS, MOCK_NEWS } from "../data/dashboardData";
+import { useAuth } from "../context/AuthContext"; // <-- 1. Importamos el contexto
 
 export const Dashboard: React.FC = () => {
+  const { user } = useAuth(); // <-- 2. Extraemos el usuario actual
+
+  // 3. Obtenemos solo el primer nombre (Ej: "Juan Pérez" -> "Juan")
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Estudiante';
+
   return (
     <DashboardLayout>
       
-      {/* 1. BUSCADOR (Extraído a componente) */}
+      {/* 1. BUSCADOR */}
       <UniversalSearch />
 
       {/* 2. SALUDO Y LINKS DE VIDA UNIVERSITARIA */}
       <section className="mb-6">
         <h1 className="text-2xl md:text-4xl font-bold mb-1 text-white">
-          ¡Hola, <span className="text-itec-red-skye">Jairo</span>! 👋
+          ¡Hola, <span className="text-itec-red-skye">{firstName}</span>! 👋
         </h1>
         <p className="text-gray-400 text-sm">
           Tu progreso en la UTN BA, en un solo lugar.
@@ -41,7 +47,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. HUB PRINCIPAL (Extraído a componente) */}
+      {/* 3. HUB PRINCIPAL */}
       <HubNavigation />
 
       {/* 4. FEED DE NOTICIAS DE INSTAGRAM */}
