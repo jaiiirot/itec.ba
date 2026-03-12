@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 // import { db } from '../lib/firebase';
 // import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
@@ -68,7 +67,7 @@ export interface AnnouncementData {
   createdAt: Timestamp | any;
 }
 
-const API_URL_ANNOUNCEMENTS = 'http://127.0.0.1:5000/api/announcements';
+const API_URL_ANNOUNCEMENTS = 'http://127.0.0.1:5001/api/announcements';
 
 const getToken = async () => {
   const token = await auth.currentUser?.getIdToken();
@@ -88,16 +87,38 @@ export const adminService = {
   },
 
   // --- GESTIÓN DE AVISOS GLOBAL (Migrado a Node.js + MongoDB) ---
-  createAnnouncement: async (title: string, message: string, hoursActive: number): Promise<string> => {
+  // --- GESTIÓN DE AVISOS GLOBAL (Migrado a Node.js + MongoDB) ---
+  createAnnouncement: async (title: string, message: string, hoursActive: any): Promise<string> => {
     const token = await getToken();
+
+    // 1. ESCUDO ANTI-NaN: Si el input del modal viene vacío o como NaN, lo forzamos a 24hs.
+    let validHours = Number(hoursActive);
+    if (isNaN(validHours) || validHours <= 0) {
+       validHours = 24;
+    }
+
     const res = await fetch(API_URL_ANNOUNCEMENTS, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ title, message, hoursActive })
+      // Esto ahora siempre viajará limpio y perfecto
+      body: JSON.stringify({ 
+        title: title.trim(), 
+        message: message.trim(), 
+        hoursActive: validHours 
+      })
     });
+
+    // 2. CAPTURA DE ERRORES INTELIGENTE: 
+    // Ahora leemos el error exacto que envía Node.js en vez de un "Bad Request" genérico.
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      // Lanzamos el error real (Ej: "El título y el mensaje son obligatorios")
+      throw new Error(errorData.error || `Error del Backend: ${res.statusText}`);
+    }
+
     const data = await res.json();
     return data._id;
   },

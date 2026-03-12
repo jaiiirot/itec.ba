@@ -68,7 +68,7 @@ export interface ResourceData {
   submittedBy?: string;
 }
 
-const API_URL = 'http://127.0.0.1:5000/api/resources';
+const API_URL = 'http://127.0.0.1:5001/api/resources';
 
 // Función auxiliar para obtener el token de seguridad
 const getToken = async () => {

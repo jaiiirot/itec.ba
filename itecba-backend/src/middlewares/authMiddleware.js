@@ -9,28 +9,30 @@ export const verifyToken = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    // 1. Firebase verifica que el token (y el login) sea real
     const decodedToken = await authFirebase.verifyIdToken(token);
-
-    // 2. Buscamos el rol del usuario en la base de datos segura (Firestore)
     const userDoc = await dbFirebase
       .collection("users")
       .doc(decodedToken.uid)
       .get();
     const userData = userDoc.exists ? userDoc.data() : { role: "student" };
 
-    // 3. Adjuntamos los datos a la petición para usarlos en el controlador
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
       role: userData.role,
     };
-    next(); // Pasa a la siguiente función
+    next();
   } catch (error) {
-    res.status(401).json({ error: "Token inválido o expirado." });
+    // 🔴 AHORA IMPRIMIRÁ LA VERDAD EN TU CONSOLA DE NODE.JS
+    console.error("🔥 ERROR DE FIREBASE ADMIN AL VERIFICAR TOKEN:");
+    console.error(error);
+
+    res.status(401).json({
+      error: "Token inválido o expirado.",
+      detalles: error.message,
+    });
   }
 };
-
 // Middleware para rutas exclusivas de Admin
 export const requireAdmin = (req, res, next) => {
   if (req.user.role !== "admin") {

@@ -25,3 +25,6 @@ dist-ssr
 
 *.env
 .env
+firebase-service-account.json
+./*/firebase-service-account.json
+.\src\config\firebase-service-account.json
