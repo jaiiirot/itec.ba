@@ -1,71 +1,72 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore'; // <-- Añadido increment y updateDoc
+
+export type Role = 'admin' | 'student';
 
 export interface User {
   id?: string;
   name: string;
   email: string;
+  photoURL?: string;
   dni?: string;
+  legajo?: string;
   specialty?: string;
   phone?: string;
-  photoURL?: string;
+  role: Role;
+  points?: number; // <-- NUEVO: Sistema de puntos
 }
 
 interface AuthContextType {
   user: User | null;
   loginWithGoogle: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
+  addPoints: (pointsToAdd: number) => Promise<void>; // <-- NUEVA FUNCIÓN
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const SUPER_ADMIN_EMAIL = 'jtumiricuellar@frba.utn.edu.ar';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Este observador es el "Guardia de Seguridad" maestro de tu app
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        
-        // 🚨 1. REGLA DE SEGURIDAD ESTRICTA AQUÍ ADENTRO 🚨
         if (!firebaseUser.email?.endsWith('@frba.utn.edu.ar')) {
-          console.warn("Intento de login bloqueado:", firebaseUser.email);
-          await signOut(auth); // Cerramos su sesión inmediatamente
-          setUser(null);
-          setLoading(false);
-          return; // Cortamos la ejecución, no entra a la app.
+          await signOut(auth);
+          setUser(null); setLoading(false); return;
         }
 
         try {
-          // 2. Si pasó el filtro, buscamos si ya completó su DNI en Firestore
           const docRef = doc(db, 'users', firebaseUser.uid);
           const docSnap = await getDoc(docRef);
-
+          
           if (docSnap.exists()) {
             setUser({ id: firebaseUser.uid, ...docSnap.data() } as User);
           } else {
-            // 3. Es de la FRBA pero es nuevo. Le armamos el perfil básico.
-            setUser({
+            const initialRole: Role = firebaseUser.email === SUPER_ADMIN_EMAIL ? 'admin' : 'student';
+            const newUser: User = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Estudiante',
               email: firebaseUser.email || '',
               photoURL: firebaseUser.photoURL || '',
-            });
+              role: initialRole,
+              points: 0 // <-- Inicia con 0 puntos
+            };
+            
+            await setDoc(docRef, newUser);
+            setUser(newUser);
           }
         } catch (error) {
-          console.warn("⚠️ Firestore bloqueado por el navegador. Usando datos básicos.");
-          setUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Estudiante',
-            email: firebaseUser.email || '',
-            photoURL: firebaseUser.photoURL || '',
-          });
+          console.error("Error validando usuario", error);
         } finally {
           setLoading(false);
         }
@@ -81,17 +82,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      
-      // Validación visual para lanzarle el cartel rojo al usuario
       if (!result.user.email?.endsWith('@frba.utn.edu.ar')) {
         await signOut(auth);
-        throw new Error('ACCESO DENEGADO: Solo se permiten correos institucionales (@frba.utn.edu.ar).');
+        throw new Error('Solo se permiten correos institucionales de la UTN BA.');
       }
     } catch (error: any) {
-      console.error('Error de login:', error);
-      // Evitamos mostrar error si el usuario simplemente cerró la ventana de Google
       if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        alert(error.message || 'Error al iniciar sesión con Google.');
+        alert(error.message || 'Error al iniciar sesión.');
       }
     }
   };
@@ -108,10 +105,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Función para sumar puntos en tiempo real
+  const addPoints = async (pointsToAdd: number) => {
+    if (!auth.currentUser) return;
+    try {
+      const docRef = doc(db, 'users', auth.currentUser.uid);
+      await updateDoc(docRef, { points: increment(pointsToAdd) }); // Suma en la base de datos
+      setUser((prev) => prev ? { ...prev, points: (prev.points || 0) + pointsToAdd } : prev); // Suma en la pantalla
+    } catch (error) {
+      console.error("Error agregando puntos:", error);
+    }
+  };
+
   const logoutUser = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, loginWithGoogle, updateProfile, logout: logoutUser, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ 
+      user, loginWithGoogle, updateProfile, addPoints, logout: logoutUser, 
+      isAuthenticated: !!user, isAdmin: user?.role === 'admin', loading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

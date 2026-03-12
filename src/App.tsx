@@ -12,6 +12,7 @@ import { GradoPage } from "./pages/GradoPage";
 import { NosotrosPage } from "./pages/NosotrosPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ErrorPage } from "./pages/ErrorPage";
+import { AdminPanel } from './pages/AdminPanel';
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { path: "nosotros", element: <NosotrosPage /> },
       
       // RUTAS DEL PERFIL
+      { path: "admin", element: <AdminPanel /> },
       { path: "perfil", element: <ProfilePage /> }, // Cuando entra directo a Iniciar Sesión
       { path: "perfil/:username", element: <ProfilePage /> }, // Cuando ya tiene su usuario (Ej: /perfil/jtumiricuellar)
     ],

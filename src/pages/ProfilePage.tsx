@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // <-- Importamos hooks de enrutamiento
+import { useNavigate, useParams } from "react-router-dom";
 import { DashboardLayout } from "../components/templates/DashboardLayout";
 import { useAuth } from "../context/AuthContext";
-import type { User } from "../context/AuthContext";
 import { Icons } from "../components/atoms/Icons";
 import { TarjeTec } from "../components/organisms/TarjeTec";
 import { Input } from "../components/atoms/Input";
@@ -11,45 +10,31 @@ import { BENEFITS_DATA } from "../data/profileData";
 import logoItec from '../assets/logo.png'; 
 
 export const ProfilePage: React.FC = () => {
-  const { user, loginWithGoogle, updateProfile, logout, isAuthenticated, loading } = useAuth();
+  const { user, loginWithGoogle, updateProfile, logout, isAuthenticated, loading, isAdmin } = useAuth();
   
-  // Hooks para redirigir la URL
   const navigate = useNavigate();
-  const { username } = useParams(); // Obtenemos lo que dice la URL (ej: "jtumiricuellar")
+  const { username } = useParams(); 
 
   const hasCard = isAuthenticated && user && user.dni && user.dni.trim() !== '';
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    dni: '',
-    specialty: '',
-    phone: ''
+    name: '', email: '', dni: '', specialty: '', phone: ''
   });
   
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // REDIRECCIÓN MÁGICA DE LA URL
   useEffect(() => {
-    // Si está logueado y tenemos su correo...
     if (isAuthenticated && user?.email) {
-      // Extraemos el usuario (ej: "jtumiricuellar" de "jtumiricuellar@frba...")
       const expectedUsername = user.email.split('@')[0];
-      
-      // Si la URL en la que está NO coincide con su usuario (por ejemplo, está en "/perfil" plano)
       if (username !== expectedUsername) {
-        // Lo empujamos a su URL personalizada
         navigate(`/perfil/${expectedUsername}`, { replace: true });
       }
     } else if (!isAuthenticated && username) {
-      // Si no está logueado pero alguien intenta entrar a /perfil/juan, lo mandamos al login plano
       navigate('/perfil', { replace: true });
     }
   }, [isAuthenticated, user, username, navigate]);
 
-
-  // Pre-llenar formulario
   useEffect(() => {
     if (user && !hasCard) {
       setFormData(prev => ({
@@ -74,10 +59,11 @@ export const ProfilePage: React.FC = () => {
       await updateProfile({
         name: formData.name,
         dni: formData.dni,
+        legajo: formData.dni, 
         specialty: formData.specialty,
         phone: formData.phone
-      });
-    } catch (err) {
+      } as any);
+    } catch {
       setError('Ocurrió un error al guardar tus datos.');
     } finally {
       setIsSaving(false);
@@ -104,17 +90,17 @@ export const ProfilePage: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-itec-blue/20 blur-[100px] pointer-events-none rounded-full"></div>
           
           <div className="bg-itec-surface border border-itec-gray rounded-3xl p-10 max-w-md w-full text-center shadow-2xl relative z-10">
-            <div className="w-20 h-20 bg-itec-blue rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(0,64,147,0.5)]">
-               <img src={logoItec} alt="Logo" className="w-12 h-12 object-contain" />
+            <div className="w-33 h-33 rounded-2xl flex items-center justify-center mx-auto mb-6">
+               <img src={logoItec} alt="Logo" className="w-33 h-33 object-contain" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Portal ITEC</h1>
+            <h1 className="text-3xl font-bold mb-2">Portal ITEC</h1>
             <p className="text-gray-400 text-sm mb-8">Accedé a tus beneficios y apuntes usando tu cuenta de la facultad.</p>
             
             <button 
               onClick={loginWithGoogle}
-              className="w-full bg-white hover:bg-gray-200 text-black font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg cursor-pointer"
+              className="w-full bg-itec-red hover:bg-itec-red/50 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-3 transition-colors shadow-lg cursor-pointer"
             >
-              <div className="w-5 h-5 text-blue-600"><Icons type="google" /></div>
+              <div className="w-5 h-5"><Icons type="google" /></div>
               Iniciar sesión con @frba
             </button>
           </div>
@@ -147,7 +133,7 @@ export const ProfilePage: React.FC = () => {
                   <Input fullWidth disabled value={formData.email} className="py-2.5 bg-itec-bg text-sm border-itec-gray opacity-50 cursor-not-allowed" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">DNI *</label>
+                  <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1 ml-1">DNI / Legajo *</label>
                   <Input fullWidth placeholder="Sin puntos" value={formData.dni} onChange={e => setFormData({...formData, dni: e.target.value})} className="py-2.5 bg-itec-bg text-sm border-itec-gray" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -210,9 +196,15 @@ export const ProfilePage: React.FC = () => {
                 <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="documentFill" /></div>{user?.dni}</span>
                 <span className="hidden md:block text-gray-600">•</span>
                 <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="message" /></div>{user?.email}</span>
-                <span className="hidden md:block text-gray-600">•</span>
-                <span className="flex items-center gap-1.5"><div className="w-4 h-4"><Icons type="whatsapp" /></div>{user?.phone}</span>
               </div>
+              
+              {/* NUEVO BADGE DE PUNTOS */}
+              <div className="mt-3">
+                <span className="inline-flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                  <span>⭐</span> {user?.points || 0} Puntos ITEC
+                </span>
+              </div>
+
             </div>
           </div>
           <button onClick={logout} className="text-sm bg-itec-red px-4 py-2 rounded-lg hover:bg-itec-red-skye hover:text-white transition-colors font-medium cursor-pointer shrink-0">

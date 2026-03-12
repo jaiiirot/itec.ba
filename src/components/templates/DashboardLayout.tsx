@@ -4,6 +4,8 @@ import { ChatbotWidget } from "../organisms/ChatbotWidget"; // <-- IMPORTAR AQU�
 import { BackgroundBlur } from "../atoms/BackgroundBlur"; // <-- 1. Importar el componente
 import logoItec from "../../assets/logo.png"; // <-- IMPORTA
 import { Icons } from "../atoms/Icons";
+// Agrega esta importación arriba:
+import { GlobalAnnouncement } from '../organisms/GlobalAnnouncement';
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -45,6 +47,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
       </main>
 
       {/* AÑADIR EL CHATBOT AQUÍ */}
+      <GlobalAnnouncement />
       <ChatbotWidget />
     </div>
   );
