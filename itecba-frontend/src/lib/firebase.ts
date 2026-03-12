@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'; // <-- Importar persistencia
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -16,5 +16,11 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Opcional: Forzar que el prompt de Google pregunte la cuenta siempre
-googleProvider.setCustomParameters({ prompt: "select_account" });
+// ACTIVAR CACHÉ (Ahorra MUCHÍSIMOS recursos)
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code == 'failed-precondition') {
+    console.warn("Múltiples pestañas abiertas, el caché solo funciona en una.");
+  } else if (err.code == 'unimplemented') {
+    console.warn("El navegador no soporta caché de Firebase.");
+  }
+});

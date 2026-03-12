@@ -1,20 +1,3 @@
-export const CAMPUS_LIFE_LINKS = [
-  { title: 'Pedí tu TarjeTEC', url: '/perfil', icon: '💳' },
-  { title: 'Camino Seguro', url: 'https://www.instagram.com/p/DFIRHw0uEIJ/', icon: '🚶‍♂️' },
-  { title: 'Mapa Sede Campus', url: 'https://drive.google.com/file/d/1-puLyo4kv3HcNH0_WeaYsIKBJ6WC0Kse/view', icon: '🗺️' },
-  { title: 'Seguridad 8B', url: 'https://drive.google.com/file/d/1Y7pkVpRRSJnuaXaeQv_xm9WOfaozAyXO/view', icon: '🚓' },
-  { title: 'Beneficios Mail', url: 'https://docs.frba.utn.edu.ar/books/mu---beneficios-con-cuenta-institucional', icon: '✉️' },
-  { title: 'Becas YPF Universitarias', url: 'https://bit.ly/ypf-becas', icon: '🦺' },
-  { title: 'Pasantías Brinks | Programa', url: 'http://bit.ly/pasantias-brinks', icon: '🧱' },
-  { title: 'Bolsa de Trabajo | UTN BA', url: 'https://utnba.talentia.com/portal/home', icon: '💼' },
-  { title: 'PIDs 2026 | Investigación', url: 'https://becas.frba.utn.edu.ar/', icon: '🔬' },
-  { title: 'Trámites | Alumnos', url: 'https://frba.utn.edu.ar/estudiantes/tramites/alumnos/', icon: '📄' },
-  { title: 'SIU Guaraní | Autogestión', url: 'https://guarani.frba.utn.edu.ar/autogestion/grado/', icon: '🏛️' },
-  { title: 'Aulas Virtuales| Campus', url: 'https://aulasvirtuales.frba.utn.edu.ar/', icon: '💻' },
-  { title: 'Horarios 2026 | Drive', url: 'https://drive.google.com/drive/folders/1tRhcVZsWeyj3VMVYnR1xseDewGYcsNLu?usp=sharing', icon: '🕒' },
-  { title: 'Bibliotec | Material', url: 'http://bit.ly/UTNpedia', icon: '📚' },
-  { title: 'Carga de Material | Aportes', url: 'http://bit.ly/cargamaterialITEC', icon: '☁️' }
-];
 
 // Simulamos los próximos eventos
 export const UPCOMING_EVENTS = [
