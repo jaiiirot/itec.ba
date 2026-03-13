@@ -1,5 +1,6 @@
 import React, { useState, Suspense } from 'react';
 import { Icons } from '../atoms/Icons';
+import AdminButton from '../atoms/AdminButton';
 
 // 🔴 LAZY LOADING DEL MODAL
 const AddDateModal = React.lazy(() => import('./AddDateModal').then(m => ({ default: m.AddDateModal })));
@@ -30,12 +31,12 @@ export const ImportantDatesWidget: React.FC<Props> = ({ isAdmin }) => {
           <span className="text-orange-500">📅</span> Calendario Académico
         </h2>
         {isAdmin && (
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="text-xs bg-itec-surface border border-itec-gray hover:bg-itec-gray text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
-          >
-            <Icons type="plus" className="w-3 h-3" /> Agregar Fecha
-          </button>
+           <button 
+             onClick={() => setIsModalOpen(true)}
+             className="text-xs bg-itec-surface border border-itec-gray hover:bg-itec-gray text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+             >
+               <Icons type="plus" className="w-3 h-3" /> Agregar Fecha
+           </button>
         )}
       </div>
 

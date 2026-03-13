@@ -1,15 +1,23 @@
-import React, { useState, useEffect, Suspense } from 'react';
-import { DashboardLayout } from '../components/templates/DashboardLayout';
-import { Button } from '../components/atoms/Button';
+import React, { useState, useEffect, Suspense } from "react";
+import { DashboardLayout } from "../components/templates/DashboardLayout";
+import { Button } from "../components/atoms/Button";
+import { PageHeader } from "../components/molecules/PageHeader";
 
-import { useAuth } from '../context/AuthContext';
-import { coursesService } from '../services/coursesService';
+import { useAuth } from "../context/AuthContext";
+import { coursesService } from "../services/coursesService";
 
 // Importamos el nuevo organismo
-import { CourseGrid, type CourseWithLocalProgress } from '../components/organisms/CourseGrid';
+import {
+  CourseGrid,
+  type CourseWithLocalProgress,
+} from "../components/organisms/CourseGrid";
 
 // 🔴 LAZY LOADING: El modal no se importa hasta que el Admin hace clic en "Subir Clase"
-const AddCourseModal = React.lazy(() => import('../components/organisms/AddCourseModal').then(m => ({ default: m.AddCourseModal })));
+const AddCourseModal = React.lazy(() =>
+  import("../components/organisms/AddCourseModal").then((m) => ({
+    default: m.AddCourseModal,
+  })),
+);
 
 export const MisCursos: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -19,7 +27,10 @@ export const MisCursos: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Función para calcular progreso desde localStorage
-  const calculateLocalProgress = (courseId: string, totalVideos: number): number => {
+  const calculateLocalProgress = (
+    courseId: string,
+    totalVideos: number,
+  ): number => {
     if (totalVideos === 0) return 0;
     try {
       const savedData = localStorage.getItem(`itec_course_${courseId}`);
@@ -36,30 +47,39 @@ export const MisCursos: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    coursesService.getCourses()
-      .then(dbCourses => {
+    coursesService
+      .getCourses()
+      .then((dbCourses) => {
         // Mapeamos para inyectarles el progreso local
-        const coursesWithProgress = dbCourses.map(course => {
+        const coursesWithProgress = dbCourses.map((course) => {
           const courseId = course.id || (course as any)._id; // 🔴 Soporte MongoDB
           return {
             ...course,
-            localProgress: calculateLocalProgress(courseId, course.videos?.length || 0)
+            localProgress: calculateLocalProgress(
+              courseId,
+              course.videos?.length || 0,
+            ),
           };
         });
 
         setCourses(coursesWithProgress);
       })
-      .catch(err => console.error("Error cargando cursos:", err))
+      .catch((err) => console.error("Error cargando cursos:", err))
       .finally(() => setIsLoading(false));
   }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault(); 
-    if (!window.confirm("¿Seguro que deseas eliminar este curso de la base de datos?")) return;
-    
+    e.preventDefault();
+    if (
+      !window.confirm(
+        "¿Seguro que deseas eliminar este curso de la base de datos?",
+      )
+    )
+      return;
+
     try {
       await coursesService.deleteCourse(id);
-      setCourses(prev => prev.filter(c => (c.id || (c as any)._id) !== id));
+      setCourses((prev) => prev.filter((c) => (c.id || (c as any)._id) !== id));
       localStorage.removeItem(`itec_course_${id}`); // Limpiamos su progreso
     } catch {
       alert("Error al eliminar el curso.");
@@ -68,36 +88,47 @@ export const MisCursos: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white">Cursos ITEC</h1>
-          <p className="text-gray-400 mt-2 text-sm md:text-base">
-            Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. <br/>Continuá donde lo dejaste.
-          </p>
-        </div>
-
+      <PageHeader
+        title="Cursos ITEC"
+        description="Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. Continuá donde lo dejaste."
+        iconType="playFill"
+        colorTheme="blue"
+      >
         {isAdmin && (
-          <Button variant="primary" onClick={() => setIsModalOpen(true)} className="bg-itec-blue/20 text-itec-blue-skye hover:bg-itec-blue hover:text-white border-none transition-all shadow-lg text-sm shrink-0">
+          <Button
+            variant="primary"
+            onClick={() => setIsModalOpen(true)}
+            className="bg-itec-blue/20 text-itec-blue-skye hover:bg-itec-blue hover:text-white border-none transition-all shadow-lg text-sm shrink-0"
+          >
             + Subir Clase / Curso
           </Button>
         )}
-      </div>
-      
+      </PageHeader>
+
       {/* 🔴 ORGANISMO: Toda la parte visual de la grilla ahora vive aquí */}
-      <CourseGrid 
-        courses={courses} 
-        isLoading={isLoading} 
-        isAdmin={isAdmin} 
-        onDelete={handleDelete} 
+      <CourseGrid
+        courses={courses}
+        isLoading={isLoading}
+        isAdmin={isAdmin}
+        onDelete={handleDelete}
       />
 
       {/* 🔴 RENDERIZADO PEREZOSO: El modal y todos sus videos solo se montan si se pide */}
       {isAdmin && isModalOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
-          <AddCourseModal 
-            isOpen={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            onCourseAdded={(newCourse) => setCourses(prev => [{...newCourse, localProgress: 0}, ...prev])}
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+          }
+        >
+          <AddCourseModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onCourseAdded={(newCourse) =>
+              setCourses((prev) => [
+                { ...newCourse, localProgress: 0 },
+                ...prev,
+              ])
+            }
           />
         </Suspense>
       )}

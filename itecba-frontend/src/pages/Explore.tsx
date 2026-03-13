@@ -8,6 +8,7 @@ import type { ResourceData } from '../services/resourcesService';
 // Importamos nuestros nuevos componentes limpios
 import { ResourceFilters } from '../components/organisms/ResourceFilters';
 import { ResourcesTable } from '../components/organisms/ResourcesTable';
+import { PageHeader } from '../components/molecules/PageHeader';
 
 // 🔴 LAZY LOADING: Estos componentes pesados no se descargan hasta que se haga clic en los botones
 const AddResourceModal = React.lazy(() => import('../components/organisms/AddResourceModal').then(m => ({ default: m.AddResourceModal })));
@@ -65,28 +66,27 @@ export const Explore: React.FC = () => {
       <div className="max-w-7xl mx-auto pb-10 relative z-10">
         
         {/* Cabecera Principal */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Explorar Aportes</h1>
-          <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto mb-4">
-            Resúmenes, parciales y guías compartidas por la comunidad de ITEC.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Button variant="secondary" onClick={() => setIsAddModalOpen(true)} className="text-xs bg-orange-600/20 text-orange-500 border-none hover:bg-orange-600 hover:text-white transition-all">
-              + Aportar Archivo (+1 Punto)
+        <PageHeader 
+          title="Explorar Aportes"
+          description="Resúmenes, parciales y guías compartidas por la comunidad de LA UTN."
+          iconType="documentFill"
+           colorTheme="orange"
+         >
+           <Button variant="secondary" onClick={() => setIsAddModalOpen(true)} className="text-xs bg-orange-600/20 text-orange-500 border-none hover:bg-orange-600 hover:text-white transition-all">
+             + Aportar Archivo (+1 Punto)
+           </Button>
+           {isAdmin && (
+            <Button variant="primary" onClick={() => setIsAdminModalOpen(true)} className="relative text-xs bg-itec-surface border-itec-gray hover:bg-itec-gray transition-all shadow-lg">
+              Moderar Archivos
+              {pendingCount > 0 && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-500 text-white text-[10px] items-center justify-center font-bold">{pendingCount}</span>
+                </span>
+              )}
             </Button>
-            {isAdmin && (
-              <Button variant="primary" onClick={() => setIsAdminModalOpen(true)} className="relative text-xs bg-itec-surface border-itec-gray hover:bg-itec-gray transition-all shadow-lg">
-                Moderar Archivos
-                {pendingCount > 0 && (
-                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-orange-500 text-white text-[10px] items-center justify-center font-bold">{pendingCount}</span>
-                  </span>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
+          )}
+        </PageHeader>
 
         {/* Organismo: Filtros */}
         <ResourceFilters 

@@ -1,16 +1,15 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
 
 import { useAuth } from '../context/AuthContext';
 import { groupsService, type GroupData } from '../services/groupsService';
 
-// Importamos nuestros nuevos organismos modulares
 import { GroupFilters } from '../components/organisms/GroupFilters';
 import { SpecialtyGrid } from '../components/organisms/SpecialtyGrid';
 import { GroupResults } from '../components/organisms/GroupResults';
+import { PageHeader } from '../components/molecules/PageHeader';
 
-// 🔴 LAZY LOADING: Los modales solo se descargan si el usuario hace clic
 const AddGroupModal = React.lazy(() => import('../components/organisms/AddGroupModal').then(m => ({ default: m.AddGroupModal })));
 const AdminPendingGroupsModal = React.lazy(() => import('../components/organisms/AdminPendingGroupsModal').then(m => ({ default: m.AdminPendingGroupsModal })));
 
@@ -28,11 +27,6 @@ export const GroupsPage: React.FC = () => {
   const [comision, setComision] = useState('');
   
   const [hasSearched, setHasSearched] = useState(false);
-  const [results, setResults] = useState<GroupData[]>([]);
-
-  // Estados de Modales
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   useEffect(() => {
     setIsLoadingGroups(true);
@@ -48,20 +42,7 @@ export const GroupsPage: React.FC = () => {
 
   const handleClear = () => {
     setCarrera(''); setNivel(''); setMateria(''); setComision('');
-    setHasSearched(false); setResults([]);
-  };
-
-  // 🔴 CORRECCIÓN: Búsqueda parcial (includes) implementada
-  const handleSearch = () => {
-    const filtered = allGroups.filter(g => {
-      return (carrera === '' || g.carrera === carrera) &&
-             (nivel === '' || g.nivel === nivel) &&
-             // Ahora busca coincidencias parciales sin importar mayúsculas/minúsculas
-             (materia === '' || g.materia.toLowerCase().includes(materia.toLowerCase())) &&
-             (comision === '' || g.comision.toLowerCase().includes(comision.toLowerCase()));
-    });
-    setResults(filtered);
-    setHasSearched(true);
+    setHasSearched(false);
   };
 
   const handleSpecialtyClick = (val: string) => {
@@ -69,26 +50,41 @@ export const GroupsPage: React.FC = () => {
     setNivel(val === 'ingreso' ? '0' : ''); 
     setMateria(''); 
     setComision('');
-    setResults(allGroups.filter(g => g.carrera === val));
     setHasSearched(true);
   };
+
+  // 🔴 MEJORA PREMIUM: Filtrado seguro con useMemo (Eliminamos el useState sobrante)
+  const filteredResults = useMemo(() => {
+    if (!hasSearched) return [];
+    
+    return allGroups.filter(g => {
+      const matchCarrera = carrera === '' || g.carrera === carrera;
+      const matchNivel = nivel === '' || g.nivel === nivel;
+      // BLINDAJE CONTRA CRASH: Usamos (g.materia || '') por si MongoDB devuelve un dato incompleto
+      const matchMateria = materia === '' || (g.materia || '').toLowerCase().includes(materia.toLowerCase());
+      const matchComision = comision === '' || (g.comision || '').toLowerCase().includes(comision.toLowerCase());
+      
+      return matchCarrera && matchNivel && matchMateria && matchComision;
+    });
+  }, [allGroups, hasSearched, carrera, nivel, materia, comision]);
+
+  // Estados de Modales
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto pb-10 relative z-10">
         
-        {/* Cabecera Principal */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Grupos de WhatsApp</h1>
-          <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto mb-4">
-            Encontrá la comunidad de tu materia o comisión.
-          </p>
-          
-          <div className="flex flex-wrap items-center justify-center gap-4">
+        <PageHeader 
+            title="Grupos de WhatsApp"
+            description="Encontrá la comunidad de tu materia o comisión."
+            iconType="users"
+            colorTheme="green"
+          >
             <Button variant="secondary" onClick={() => setIsAddModalOpen(true)} className="text-xs bg-itec-surface border-itec-gray hover:bg-white hover:text-black">
               + Aportar nuevo grupo
             </Button>
-            
             {isAdmin && (
               <Button variant="primary" onClick={() => setIsAdminModalOpen(true)} className="relative text-xs bg-itec-blue/20 text-itec-blue-skye hover:bg-itec-blue hover:text-white border-none shadow-lg">
                 Ver solicitudes
@@ -100,42 +96,36 @@ export const GroupsPage: React.FC = () => {
                 )}
               </Button>
             )}
-          </div>
-        </div>
+          </PageHeader>
 
-        {/* Organismo 1: Filtros */}
         <GroupFilters 
           carrera={carrera} setCarrera={setCarrera}
           nivel={nivel} setNivel={setNivel}
           materia={materia} setMateria={setMateria}
           comision={comision} setComision={setComision}
           isLoading={isLoadingGroups}
-          onSearch={handleSearch}
+          onSearch={() => setHasSearched(true)} // Solo activa el render, useMemo hace el resto
           onClear={handleClear}
         />
 
-        {/* Lógica de Renderizado Principal */}
         {isLoadingGroups ? (
           <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
             <div className="w-12 h-12 border-4 border-itec-gray border-t-itec-blue rounded-full animate-spin mb-4"></div>
             <p className="text-gray-400 font-medium">Sincronizando comunidades...</p>
           </div>
         ) : hasSearched ? (
-          /* Organismo 2: Resultados */
           <GroupResults 
-            results={results} 
+            results={filteredResults} 
             onClear={handleClear} 
             onAddClick={() => setIsAddModalOpen(true)} 
           />
         ) : (
-          /* Organismo 3: Especialidades */
           <SpecialtyGrid 
             onSpecialtyClick={handleSpecialtyClick} 
           />
         )}
       </div>
 
-      {/* Modales (Lazy Loaded) */}
       <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
         {isAddModalOpen && (
           <AddGroupModal 
