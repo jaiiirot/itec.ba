@@ -1,68 +1,72 @@
 import Group from "../models/Group.js";
 
-// GET: Traer todos los grupos APROBADOS (Público)
-export const getApprovedGroups = async (req, res) => {
+export const getApprovedGroups = async (req, res, next) => {
   try {
-    const groups = await Group.find({ isApproved: true }).sort({
+    const groups = await Group.find({ status: "approved" }).sort({
       createdAt: -1,
     });
-    res.json(groups);
+    res.status(200).json(groups);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener grupos" });
+    next(error);
   }
 };
 
-// GET: Traer grupos PENDIENTES (Solo Admins)
-export const getPendingGroups = async (req, res) => {
+export const getPendingGroups = async (req, res, next) => {
   try {
-    const groups = await Group.find({ isApproved: false }).sort({
-      createdAt: 1,
+    const groups = await Group.find({ status: "pending" }).sort({
+      createdAt: -1,
     });
-    res.json(groups);
+    res.status(200).json(groups);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener grupos pendientes" });
+    next(error);
   }
 };
 
-// POST: Proponer un nuevo grupo
-export const createGroup = async (req, res) => {
+export const createGroup = async (req, res, next) => {
   try {
-    // Si el usuario tiene rol 'admin', se aprueba instantáneamente
-    const isApproved = req.user.role === "admin";
+    const { materia, link, carrera } = req.body;
 
-    const newGroup = new Group({
-      ...req.body,
-      submittedBy: req.user.uid,
-      isApproved,
-    });
+    // 🔴 Validación de Seguridad
+    if (!materia || !link || !carrera) {
+      const err = new Error("Faltan campos obligatorios para crear el grupo");
+      err.statusCode = 400;
+      throw err;
+    }
 
-    await newGroup.save();
-    res.status(201).json(newGroup);
+    const newGroup = new Group(req.body);
+    const savedGroup = await newGroup.save();
+    res.status(201).json(savedGroup);
   } catch (error) {
-    res.status(500).json({ error: "Error al crear el grupo" });
+    next(error);
   }
 };
 
-// PATCH: Aprobar un grupo pendiente (Solo Admins)
-export const approveGroup = async (req, res) => {
+export const approveGroup = async (req, res, next) => {
   try {
-    const updatedGroup = await Group.findByIdAndUpdate(
+    const group = await Group.findByIdAndUpdate(
       req.params.id,
-      { isApproved: true },
+      { status: "approved" },
       { new: true },
     );
-    res.json(updatedGroup);
+    if (!group)
+      throw Object.assign(new Error("Grupo no encontrado"), {
+        statusCode: 404,
+      });
+    res.status(200).json(group);
   } catch (error) {
-    res.status(500).json({ error: "Error al aprobar el grupo" });
+    next(error);
   }
 };
 
-// DELETE: Rechazar/Eliminar un grupo (Solo Admins)
-export const deleteGroup = async (req, res) => {
+export const deleteGroup = async (req, res, next) => {
   try {
-    await Group.findByIdAndDelete(req.params.id);
-    res.json({ message: "Grupo eliminado correctamente" });
+    const group = await Group.findByIdAndDelete(req.params.id);
+    if (!group)
+      throw Object.assign(new Error("Grupo no encontrado"), {
+        statusCode: 404,
+      });
+    res.status(200).json({ message: "Grupo eliminado exitosamente" });
   } catch (error) {
-    res.status(500).json({ error: "Error al eliminar el grupo" });
+    next(error);
   }
 };

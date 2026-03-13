@@ -1,44 +1,50 @@
 import Link from "../models/Link.js";
 
-// GET: Traer todos los links (Público)
-export const getLinks = async (req, res) => {
+export const getLinks = async (req, res, next) => {
   try {
-    const links = await Link.find().sort({ order: 1 }); // Ordenados por el campo 'order'
-    res.json(links);
+    const links = await Link.find().sort({ order: 1 });
+    res.status(200).json(links);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener links" });
+    next(error);
   }
 };
 
-// POST: Crear link (Solo Admin)
-export const createLink = async (req, res) => {
+export const createLink = async (req, res, next) => {
   try {
+    const { title, url } = req.body;
+    if (!title || !url)
+      throw Object.assign(new Error("Título y URL obligatorios"), {
+        statusCode: 400,
+      });
+
     const newLink = new Link(req.body);
-    await newLink.save();
-    res.status(201).json(newLink);
+    const savedLink = await newLink.save();
+    res.status(201).json(savedLink);
   } catch (error) {
-    res.status(500).json({ error: "Error al crear link" });
+    next(error);
   }
 };
 
-// PUT: Actualizar link (Solo Admin)
-export const updateLink = async (req, res) => {
+export const updateLink = async (req, res, next) => {
   try {
-    const updatedLink = await Link.findByIdAndUpdate(req.params.id, req.body, {
+    const link = await Link.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-    res.json(updatedLink);
+    if (!link)
+      throw Object.assign(new Error("Link no encontrado"), { statusCode: 404 });
+    res.status(200).json(link);
   } catch (error) {
-    res.status(500).json({ error: "Error al actualizar link" });
+    next(error);
   }
 };
 
-// DELETE: Borrar link (Solo Admin)
-export const deleteLink = async (req, res) => {
+export const deleteLink = async (req, res, next) => {
   try {
-    await Link.findByIdAndDelete(req.params.id);
-    res.json({ message: "Link eliminado" });
+    const link = await Link.findByIdAndDelete(req.params.id);
+    if (!link)
+      throw Object.assign(new Error("Link no encontrado"), { statusCode: 404 });
+    res.status(200).json({ message: "Link eliminado" });
   } catch (error) {
-    res.status(500).json({ error: "Error al eliminar link" });
+    next(error);
   }
 };

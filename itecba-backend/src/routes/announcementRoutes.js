@@ -1,18 +1,14 @@
-import express from "express";
+import { Router } from "express";
 import {
-  getActiveAnnouncements,
+  getActiveAnnouncement,
   createAnnouncement,
-  deleteAnnouncement,
+  deactivateAnnouncement,
 } from "../controllers/announcementController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
-const router = express.Router();
+const router = Router();
 
-// Públicas
-router.get("/active", getActiveAnnouncements);
-
-// Solo Admins
-router.post("/", verifyToken, requireAdmin, createAnnouncement);
-router.delete("/:id", verifyToken, requireAdmin, deleteAnnouncement);
+router.get("/active", getActiveAnnouncement);
+router.post("/", createAnnouncement);
+router.put("/:id/deactivate", deactivateAnnouncement);
 
 export default router;

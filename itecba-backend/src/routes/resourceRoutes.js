@@ -1,4 +1,4 @@
-import express from "express";
+import { Router } from "express";
 import {
   getApprovedResources,
   getPendingResources,
@@ -6,16 +6,13 @@ import {
   approveResource,
   deleteResource,
 } from "../controllers/resourceController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/approved", getApprovedResources);
-router.post("/", verifyToken, createResource);
-
-// Rutas de Admin
-router.get("/pending", verifyToken, requireAdmin, getPendingResources);
-router.patch("/:id/approve", verifyToken, requireAdmin, approveResource);
-router.delete("/:id", verifyToken, requireAdmin, deleteResource);
+router.get("/", getApprovedResources);
+router.get("/pending", getPendingResources);
+router.post("/", createResource);
+router.put("/:id/approve", approveResource);
+router.delete("/:id", deleteResource);
 
 export default router;

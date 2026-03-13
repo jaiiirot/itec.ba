@@ -1,40 +1,67 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import { connectMongo } from "./config/mongo.js";
-
-// Importación de rutas
-import resourceRoutes from "./routes/resourceRoutes.js";
-import groupRoutes from "./routes/groupRoutes.js";
-import courseRoutes from "./routes/courseRoutes.js";
-import announcementRoutes from "./routes/announcementRoutes.js";
-import linksRoutes from "./routes/linksRoutes.js";
 
 dotenv.config();
+
+// IMPORTACIONES LOCALES (Deben llevar .js al final)
+import connectDB from "./config/mongo.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+
+// Importación de Rutas (Asegúrate de que estos archivos también usen export default)
+import announcementRoutes from "./routes/announcementRoutes.js";
+import resourceRoutes from "./routes/resourceRoutes.js";
+import groupRoutes from "./routes/groupRoutes.js";
+import linksRoutes from "./routes/linksRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+
 const app = express();
 
-// Configuración estricta de CORS para tu frontend
+// 1. Conexión a DB
+connectDB();
+
+// 2. Seguridad y Middlewares Globales
+app.use(helmet());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
   }),
 );
+app.use(express.json({ limit: "10mb" }));
+app.use(morgan("dev"));
 
-app.use(express.json());
+// 3. Limitador de peticiones (Protección DDoS)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 1000,
+  message: {
+    error: true,
+    message: "Demasiadas peticiones. Intenta más tarde.",
+  },
+});
+app.use("/api", apiLimiter);
 
-// Conexión a Base de Datos
-connectMongo();
-
-// Montaje de APIs (Una sola vez por cada entidad)
+// 4. Rutas
+app.use("/api/announcements", announcementRoutes);
 app.use("/api/resources", resourceRoutes);
 app.use("/api/groups", groupRoutes);
-app.use("/api/courses", courseRoutes);
-app.use("/api/announcements", announcementRoutes);
 app.use("/api/links", linksRoutes);
+app.use("/api/courses", courseRoutes);
+
+app.get("/health", (req, res) => {
+  res
+    .status(200)
+    .json({ status: "OK", message: "ITEC Backend funcionando al 100%" });
+});
+
+// 5. MANEJADOR GLOBAL DE ERRORES (Siempre va al final)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Servidor backend corriendo en http://127.0.0.1:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo de forma segura en el puerto ${PORT}`);
 });

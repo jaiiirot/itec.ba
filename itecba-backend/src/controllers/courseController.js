@@ -1,73 +1,72 @@
 import Course from "../models/Course.js";
-import ytpl from "ytpl"; // <-- IMPORTANTE AÑADIR ESTO ARRIBA
 
-export const getCourses = async (req, res) => {
+export const getCourses = async (req, res, next) => {
   try {
     const courses = await Course.find().sort({ createdAt: -1 });
-    res.json(courses);
+    res.status(200).json(courses);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener cursos" });
+    next(error);
   }
 };
 
-export const getCourseById = async (req, res) => {
+export const getCourseById = async (req, res, next) => {
   try {
     const course = await Course.findById(req.params.id);
-    if (!course) return res.status(404).json({ error: "Curso no encontrado" });
-    res.json(course);
+    if (!course) {
+      const err = new Error("Curso no encontrado");
+      err.statusCode = 404;
+      throw err;
+    }
+    res.status(200).json(course);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener el curso" });
+    next(error);
   }
 };
 
-export const addCourse = async (req, res) => {
+export const createCourse = async (req, res, next) => {
   try {
-    const newCourse = new Course(req.body);
-    await newCourse.save();
-    res.status(201).json(newCourse);
-  } catch (error) {
-    res.status(500).json({ error: "Error al crear el curso" });
-  }
-};
+    const { title, videos } = req.body;
 
-export const deleteCourse = async (req, res) => {
-  try {
-    await Course.findByIdAndDelete(req.params.id);
-    res.json({ message: "Curso eliminado" });
-  } catch (error) {
-    res.status(500).json({ error: "Error al eliminar el curso" });
-  }
-};
-
-// NUEVO: POST - Extraer videos de una playlist de YouTube
-export const fetchPlaylistData = async (req, res, next) => {
-  try {
-    const { playlistUrl } = req.body;
-
-    if (!playlistUrl) {
-      return res.status(400).json({ error: "Falta la URL de la playlist." });
+    // 🔴 VALIDACIÓN: Un curso sin título o sin videos no sirve
+    if (!title || !videos || videos.length === 0) {
+      const err = new Error(
+        "El curso debe tener un título y al menos un video",
+      );
+      err.statusCode = 400;
+      throw err;
     }
 
-    // Usamos ytpl para hacer scraping de la playlist (límite de 50 videos)
-    const playlist = await ytpl(playlistUrl, { limit: 50 });
-
-    // Mapeamos los datos para que tengan el formato exacto de tu base de datos
-    const videos = playlist.items.map((item) => ({
-      youtubeId: item.id,
-      title: item.title,
-      duration: item.duration || "0:00",
-    }));
-
-    // Devolvemos el título de la playlist y sus videos
-    res.json({
-      title: playlist.title,
-      videos: videos,
-    });
+    const newCourse = new Course(req.body);
+    const savedCourse = await newCourse.save();
+    res.status(201).json(savedCourse);
   } catch (error) {
-    console.error("Error extrayendo playlist:", error);
-    res.status(500).json({
-      error:
-        "Error al extraer la playlist. Verifica que el link sea correcto y la playlist sea PÚBLICA.",
-    });
+    next(error);
+  }
+};
+
+export const updateCourse = async (req, res, next) => {
+  try {
+    const updatedCourse = await Course.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true },
+    );
+    if (!updatedCourse) {
+      const err = new Error("Curso no encontrado para actualizar");
+      err.statusCode = 404;
+      throw err;
+    }
+    res.status(200).json(updatedCourse);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCourse = async (req, res, next) => {
+  try {
+    await Course.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Curso eliminado" });
+  } catch (error) {
+    next(error);
   }
 };

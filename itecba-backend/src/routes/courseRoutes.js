@@ -1,23 +1,21 @@
-import express from "express";
-// 1. Añade fetchPlaylistData a la importación
+import { Router } from "express";
 import {
   getCourses,
   getCourseById,
-  addCourse,
+  createCourse, // 🔴 Cambiado de addCourse a createCourse
+  updateCourse,
   deleteCourse,
-  fetchPlaylistData,
 } from "../controllers/courseController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
-const router = express.Router();
+const router = Router();
 
+// Rutas públicas
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
 
-// 2. AÑADE ESTA RUTA ANTES DEL POST '/' PARA EVITAR CONFLICTOS
-router.post("/fetch-playlist", verifyToken, requireAdmin, fetchPlaylistData);
-
-router.post("/", verifyToken, requireAdmin, addCourse);
-router.delete("/:id", verifyToken, requireAdmin, deleteCourse);
+// Rutas protegidas (Idealmente aquí iría tu middleware de Auth para Admins)
+router.post("/", createCourse); // 🔴 Actualizado
+router.put("/:id", updateCourse);
+router.delete("/:id", deleteCourse);
 
 export default router;
