@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Icons } from '../components/atoms/Icons'; 
 
-// Organismos separados para mantener el código limpio
 import { CourseVideoPlayer } from '../components/organisms/CourseVideoPlayer';
 import { CoursePlaylist } from '../components/organisms/CoursePlaylist';
-import { CourseMaterialModal } from '../components/organisms/CourseMaterialModal';
 
 import { coursesService } from '../services/coursesService';
 import type { CourseData, Video } from '../services/coursesService';
 import { resourcesService } from '../services/resourcesService';
 import type { ResourceData } from '../services/resourcesService';
+
+// 🔴 MEJORA DE RENDIMIENTO: Lazy Loading para el modal de materiales
+const CourseMaterialModal = React.lazy(() => import('../components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); 
@@ -31,8 +32,7 @@ export const CourseDetail: React.FC = () => {
       setIsLoading(true);
       
       try {
-        // 🔴 MEJORA 1: Promise.all (Peticiones en Paralelo)
-        // Ahora MongoDB buscará el curso y los apuntes al mismo tiempo (¡Mucho más rápido!)
+        // Ejecución en paralelo (Más rápido)
         const [fetchedCourse, dbResources] = await Promise.all([
           coursesService.getCourseById(id),
           resourcesService.getApprovedResources()
@@ -42,8 +42,6 @@ export const CourseDetail: React.FC = () => {
 
         if (fetchedCourse) {
           setCourse(fetchedCourse);
-
-          // Recuperar progreso del LocalStorage
           const savedData = localStorage.getItem(`itec_course_${id}`);
           let lastVideoId = null;
 
@@ -53,7 +51,6 @@ export const CourseDetail: React.FC = () => {
             lastVideoId = parsed.lastVideo;
           }
 
-          // Asignar el video activo (el último visto o el primero de la lista)
           if (lastVideoId && fetchedCourse.videos) {
             const last = fetchedCourse.videos.find(v => v.id === lastVideoId || (v as any)._id === lastVideoId);
             setActiveVideo(last || fetchedCourse.videos[0]);
@@ -71,20 +68,23 @@ export const CourseDetail: React.FC = () => {
     fetchData();
   }, [id]);
 
-  // Filtrado inteligente de materiales de apoyo
+  // 🔴 MEJORA DEL ALGORITMO: Filtra todos los parciales precisos sin limitarlos
   const relatedResources = useMemo(() => {
     if (!course) return [];
     
-    // 🔴 MEJORA 2: Soporte para IDs Híbridos en la lógica de filtrado
     const courseId = course.id || (course as any)._id || "";
+    // Limpiamos el título para que el match sea más exacto (Ej: "Curso de Álgebra" -> "álgebra")
+    const cleanCourseTitle = course.title.toLowerCase().replace('curso de ', '').trim();
 
     return allResources.filter(res => {
-      const cTitle = course.title.toLowerCase();
       const rSubj = res.materia.toLowerCase();
-      
-      return cTitle.includes(rSubj) || 
-             (courseId.includes('seminario') && res.carrera === 'ingreso');
-    }).slice(0, 4); 
+      // Match bidireccional inteligente
+      const isMatch = cleanCourseTitle.includes(rSubj) || rSubj.includes(cleanCourseTitle);
+      const isIngreso = courseId.includes('seminario') && res.carrera === 'ingreso';
+
+      return isMatch || isIngreso;
+    }); 
+    // 🔴 ELIMINAMOS EL .slice(0,4) -> Ahora si hay 15 parciales, el alumno verá los 15 en el modal
   }, [course, allResources]);
 
   const handleVideoSelect = (video: Video) => {
@@ -93,10 +93,7 @@ export const CourseDetail: React.FC = () => {
       const newSet = new Set(prev);
       const vidId = video.id || (video as any)._id;
       newSet.add(vidId);
-      localStorage.setItem(`itec_course_${id}`, JSON.stringify({
-        watched: Array.from(newSet),
-        lastVideo: vidId
-      }));
+      localStorage.setItem(`itec_course_${id}`, JSON.stringify({ watched: Array.from(newSet), lastVideo: vidId }));
       return newSet;
     });
   };
@@ -107,11 +104,7 @@ export const CourseDetail: React.FC = () => {
       const newSet = new Set(prev);
       if (newSet.has(videoId)) newSet.delete(videoId);
       else newSet.add(videoId);
-      
-      localStorage.setItem(`itec_course_${id}`, JSON.stringify({
-        watched: Array.from(newSet),
-        lastVideo: activeVideo?.id || (activeVideo as any)?._id
-      }));
+      localStorage.setItem(`itec_course_${id}`, JSON.stringify({ watched: Array.from(newSet), lastVideo: activeVideo?.id || (activeVideo as any)?._id }));
       return newSet;
     });
   };
@@ -156,18 +149,15 @@ export const CourseDetail: React.FC = () => {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto pb-10 relative z-10">
         
-        {/* Breadcrumb */}
         <div className="mb-6 flex items-center gap-3">
           <Link to="/cursos" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-sm font-medium bg-itec-surface px-3 py-1.5 rounded-lg border border-itec-gray">
             <div className="w-4 h-4"><Icons type="arrowLeft" /></div> Volver
           </Link>
           <span className="text-gray-600">/</span>
-          <span className="text-itec-blue-skye text-sm font-bold truncate">{course.title}</span>
+          <span className="text-gray-600 text-sm font-bold truncate">{course.title}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Organismo: Reproductor y Detalles */}
           <div className="lg:col-span-2">
             <CourseVideoPlayer 
               course={course}
@@ -181,7 +171,6 @@ export const CourseDetail: React.FC = () => {
             />
           </div>
 
-          {/* Organismo: Lista de Videos (Playlist) */}
           <div className="lg:col-span-1">
             <CoursePlaylist 
               course={course}
@@ -191,16 +180,19 @@ export const CourseDetail: React.FC = () => {
               onVideoSelect={handleVideoSelect}
             />
           </div>
-
         </div>
       </div>
 
-      {/* Organismo: Modal de Materiales */}
-      <CourseMaterialModal 
-        isOpen={isMaterialModalOpen} 
-        onClose={() => setIsMaterialModalOpen(false)} 
-        relatedResources={relatedResources} 
-      />
+      {/* 🔴 Lazy Loading envolviendo el Modal */}
+      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+        {isMaterialModalOpen && (
+          <CourseMaterialModal 
+            isOpen={isMaterialModalOpen} 
+            onClose={() => setIsMaterialModalOpen(false)} 
+            relatedResources={relatedResources} 
+          />
+        )}
+      </Suspense>
 
     </DashboardLayout>
   );
