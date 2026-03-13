@@ -3,11 +3,9 @@ import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { CourseCard } from '../components/molecules/CourseCard';
 import { Button } from '../components/atoms/Button';
-import { COURSE_DATA } from '../data/courses'; 
 
 import { useAuth } from '../context/AuthContext';
-import { coursesService } from '../services/coursesService';
-import type { CourseData } from '../services/coursesService';
+import { coursesService, type CourseData } from '../services/coursesService';
 import { AddCourseModal } from '../components/organisms/AddCourseModal';
 
 // Interfaz extendida para incluir el progreso local calculado
@@ -42,11 +40,8 @@ export const MisCursos: React.FC = () => {
     setIsLoading(true);
     coursesService.getCourses()
       .then(dbCourses => {
-        // Unimos Firebase + Datos estáticos
-        const combined = [...COURSE_DATA, ...dbCourses] as CourseData[];
-        
         // Mapeamos para inyectarles el progreso local
-        const coursesWithProgress = combined.map(course => ({
+        const coursesWithProgress = dbCourses.map(course => ({
           ...course,
           localProgress: calculateLocalProgress(course.id, course.videos?.length || 0)
         }));
@@ -75,7 +70,7 @@ export const MisCursos: React.FC = () => {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-white">Cursos ITEC</h1>
-          <p className="text-gray-400 mt-2 text-sm md:text-base">Clases de consulta y material audiovisual oficial. Continuá donde lo dejaste.</p>
+          <p className="text-gray-400 mt-2 text-sm md:text-base">Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. <br/>Continuá donde lo dejaste.</p>
         </div>
 
         {isAdmin && (

@@ -107,6 +107,25 @@ export const coursesService = {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
-  }
+  },
+
+  fetchPlaylistDetails: async (playlistUrl: string): Promise<{ title: string, videos: Video[] }> => {
+    const token = await getToken();
+    const res = await fetch(`${API_URL}/fetch-playlist`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ playlistUrl })
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Error al conectar con YouTube');
+    }
+    
+    return await res.json();
+  },
 };
 
