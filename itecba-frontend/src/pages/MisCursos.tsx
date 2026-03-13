@@ -1,17 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, Suspense } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
-import { CourseCard } from '../components/molecules/CourseCard';
 import { Button } from '../components/atoms/Button';
 
 import { useAuth } from '../context/AuthContext';
-import { coursesService, type CourseData } from '../services/coursesService';
-import { AddCourseModal } from '../components/organisms/AddCourseModal';
+import { coursesService } from '../services/coursesService';
 
-// Interfaz extendida para incluir el progreso local calculado
-interface CourseWithLocalProgress extends CourseData {
-  localProgress: number;
-}
+// Importamos el nuevo organismo
+import { CourseGrid, type CourseWithLocalProgress } from '../components/organisms/CourseGrid';
+
+// 🔴 LAZY LOADING: El modal no se importa hasta que el Admin hace clic en "Subir Clase"
+const AddCourseModal = React.lazy(() => import('../components/organisms/AddCourseModal').then(m => ({ default: m.AddCourseModal })));
 
 export const MisCursos: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -41,10 +39,13 @@ export const MisCursos: React.FC = () => {
     coursesService.getCourses()
       .then(dbCourses => {
         // Mapeamos para inyectarles el progreso local
-        const coursesWithProgress = dbCourses.map(course => ({
-          ...course,
-          localProgress: calculateLocalProgress(course.id, course.videos?.length || 0)
-        }));
+        const coursesWithProgress = dbCourses.map(course => {
+          const courseId = course.id || (course as any)._id; // 🔴 Soporte MongoDB
+          return {
+            ...course,
+            localProgress: calculateLocalProgress(courseId, course.videos?.length || 0)
+          };
+        });
 
         setCourses(coursesWithProgress);
       })
@@ -58,9 +59,9 @@ export const MisCursos: React.FC = () => {
     
     try {
       await coursesService.deleteCourse(id);
-      setCourses(prev => prev.filter(c => c.id !== id));
+      setCourses(prev => prev.filter(c => (c.id || (c as any)._id) !== id));
       localStorage.removeItem(`itec_course_${id}`); // Limpiamos su progreso
-    } catch  {
+    } catch {
       alert("Error al eliminar el curso.");
     }
   };
@@ -70,7 +71,9 @@ export const MisCursos: React.FC = () => {
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-white">Cursos ITEC</h1>
-          <p className="text-gray-400 mt-2 text-sm md:text-base">Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. <br/>Continuá donde lo dejaste.</p>
+          <p className="text-gray-400 mt-2 text-sm md:text-base">
+            Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. <br/>Continuá donde lo dejaste.
+          </p>
         </div>
 
         {isAdmin && (
@@ -80,58 +83,23 @@ export const MisCursos: React.FC = () => {
         )}
       </div>
       
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 animate-in fade-in duration-500">
-          <div className="w-12 h-12 border-4 border-itec-gray border-t-itec-blue rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-400 font-medium">Cargando tus clases...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 animate-in fade-in duration-500">
-          {courses.map((curso) => (
-            <div key={curso.id} className="relative group h-full">
-              <Link to={`/cursos/${curso.id}`} className="block h-full">
-                {/* Badge visual de tipo */}
-                {curso.id.startsWith('seminario') || curso.id.startsWith('analisis') ? (
-                  <span className="absolute top-3 right-3 z-10 bg-itec-sidebar/90 backdrop-blur-md text-white text-[9px] font-bold px-2 py-1 rounded border border-white/10 shadow-lg uppercase tracking-wider">
-                    Oficial
-                  </span>
-                ) : null}
-                
-                <CourseCard 
-                  title={curso.title} 
-                  description={curso.description} 
-                  progress={curso.localProgress} // Usamos el progreso calculado localmente
-                  imageUrl={curso.imageUrl} 
-                />
-              </Link>
+      {/* 🔴 ORGANISMO: Toda la parte visual de la grilla ahora vive aquí */}
+      <CourseGrid 
+        courses={courses} 
+        isLoading={isLoading} 
+        isAdmin={isAdmin} 
+        onDelete={handleDelete} 
+      />
 
-              {isAdmin && !curso.id.startsWith('seminario') && !curso.id.startsWith('analisis') && !curso.id.startsWith('arquitectura') && !curso.id.startsWith('podcast') && (
-                <button 
-                  onClick={(e) => handleDelete(e, curso.id)}
-                  className="absolute top-3 left-3 z-20 bg-red-600/90 hover:bg-red-500 text-white w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                  title="Eliminar curso"
-                >
-                  <span className="text-sm">🗑️</span>
-                </button>
-              )}
-            </div>
-          ))}
-          
-          {courses.length === 0 && (
-            <div className="col-span-full text-center py-20 bg-itec-surface border border-itec-gray rounded-2xl shadow-xl">
-              <span className="text-5xl block mb-4 opacity-50">🎓</span>
-              <p className="text-gray-400 font-medium">Aún no hay cursos publicados.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isAdmin && (
-        <AddCourseModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          onCourseAdded={(newCourse) => setCourses(prev => [{...newCourse, localProgress: 0}, ...prev])}
-        />
+      {/* 🔴 RENDERIZADO PEREZOSO: El modal y todos sus videos solo se montan si se pide */}
+      {isAdmin && isModalOpen && (
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+          <AddCourseModal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            onCourseAdded={(newCourse) => setCourses(prev => [{...newCourse, localProgress: 0}, ...prev])}
+          />
+        </Suspense>
       )}
     </DashboardLayout>
   );

@@ -27,20 +27,23 @@ export const CourseDetail: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) return;
       setIsLoading(true);
+      
       try {
-        // 1. Buscamos el curso directamente en la DB para evitar conflictos con archivos locales
-        if (!id) return;
-        const fetchedCourse = await coursesService.getCourseById(id);
+        // 🔴 MEJORA 1: Promise.all (Peticiones en Paralelo)
+        // Ahora MongoDB buscará el curso y los apuntes al mismo tiempo (¡Mucho más rápido!)
+        const [fetchedCourse, dbResources] = await Promise.all([
+          coursesService.getCourseById(id),
+          resourcesService.getApprovedResources()
+        ]);
 
-        // 2. Traer recursos para el Material de Apoyo
-        const dbResources = await resourcesService.getApprovedResources();
         setAllResources(dbResources);
 
         if (fetchedCourse) {
           setCourse(fetchedCourse);
 
-          // 3. Recuperar progreso del LocalStorage
+          // Recuperar progreso del LocalStorage
           const savedData = localStorage.getItem(`itec_course_${id}`);
           let lastVideoId = null;
 
@@ -71,11 +74,16 @@ export const CourseDetail: React.FC = () => {
   // Filtrado inteligente de materiales de apoyo
   const relatedResources = useMemo(() => {
     if (!course) return [];
+    
+    // 🔴 MEJORA 2: Soporte para IDs Híbridos en la lógica de filtrado
+    const courseId = course.id || (course as any)._id || "";
+
     return allResources.filter(res => {
       const cTitle = course.title.toLowerCase();
       const rSubj = res.materia.toLowerCase();
+      
       return cTitle.includes(rSubj) || 
-             (course.id?.includes('seminario') && res.carrera === 'ingreso');
+             (courseId.includes('seminario') && res.carrera === 'ingreso');
     }).slice(0, 4); 
   }, [course, allResources]);
 

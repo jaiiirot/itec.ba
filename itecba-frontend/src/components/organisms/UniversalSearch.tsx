@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import { Icons } from "../atoms/Icons";
-import { COURSE_DATA } from "../../data/courses";
+import { SearchResultItem } from "../molecules/SearchResultItem";
 
-// Importamos los servicios de Firebase
+import { coursesService, type CourseData } from "../../services/coursesService";
 import { groupsService, type GroupData } from "../../services/groupsService";
 import { resourcesService, type ResourceData } from "../../services/resourcesService";
 
@@ -12,43 +11,50 @@ export const UniversalSearch: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Estados para la Base de Datos
+  // Estados de datos
+  const [dbCourses, setDbCourses] = useState<CourseData[]>([]);
   const [dbGroups, setDbGroups] = useState<GroupData[]>([]);
   const [dbResources, setDbResources] = useState<ResourceData[]>([]);
+  
+  // Estado para saber si ya pedimos los datos al servidor y evitar peticiones duplicadas
+  const [hasFetchedData, setHasFetchedData] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Descargar datos en segundo plano al cargar el buscador
-  useEffect(() => {
-    const fetchSearchData = async () => {
-      setIsLoading(true);
-      try {
-        const [groups, resources] = await Promise.all([
-          groupsService.getApprovedGroups(),
-          resourcesService.getApprovedResources()
-        ]);
-        setDbGroups(groups);
-        setDbResources(resources);
-      } catch (error) {
-        console.error("Error al cargar datos para el buscador", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSearchData();
-  }, []);
+  // 🔴 LAZY FETCHING: Solo cargamos la base de datos cuando el usuario interactúa
+  const fetchSearchDataIfNeeded = async () => {
+    if (hasFetchedData || isLoading) return; // Si ya los tenemos o los estamos buscando, no hacemos nada
+    
+    setIsLoading(true);
+    try {
+      const [courses, groups, resources] = await Promise.all([
+        coursesService.getCourses(),
+        groupsService.getApprovedGroups(),
+        resourcesService.getApprovedResources()
+      ]);
+      setDbCourses(courses);
+      setDbGroups(groups);
+      setDbResources(resources);
+      setHasFetchedData(true); // Marcamos como completado para guardar en caché la sesión actual
+    } catch (error) {
+      console.error("Error al cargar datos para el buscador", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Lógica de filtrado inteligente
+  // Filtrado 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.toLowerCase();
 
     return {
-      cursos: COURSE_DATA.filter((c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)),
+      cursos: dbCourses.filter((c) => c.title.toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q)),
       aportes: dbResources.filter((r) => r.title.toLowerCase().includes(q) || r.materia.toLowerCase().includes(q)).slice(0, 4),
       grupos: dbGroups.filter((g) => g.materia.toLowerCase().includes(q) || g.comision.toLowerCase().includes(q)).slice(0, 3),
     };
-  }, [searchQuery, dbGroups, dbResources]);
+  }, [searchQuery, dbCourses, dbGroups, dbResources]);
 
+  // Cerrar al hacer clic afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -65,76 +71,104 @@ export const UniversalSearch: React.FC = () => {
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5">
           <Icons type="search" />
         </div>
+        
         <input
           type="text"
           placeholder="Buscar apuntes, materias, grupos..."
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
+            fetchSearchDataIfNeeded(); // 🚀 Pedimos los datos solo cuando escribe
             setIsSearchOpen(true);
           }}
-          onFocus={() => setIsSearchOpen(true)}
+          onFocus={() => {
+            setIsSearchOpen(true);
+            fetchSearchDataIfNeeded(); // 🚀 O pedimos los datos si hace clic en el input
+          }}
           className="bg-itec-surface border border-itec-gray text-white pl-12 pr-4 py-3 rounded-2xl w-full focus:outline-none focus:border-itec-blue transition-colors shadow-lg"
         />
 
-        {isSearchOpen && searchResults && (
+        {isSearchOpen && searchQuery.trim() && (
           <div className="absolute top-full mt-2 w-full bg-itec-surface border border-itec-gray rounded-xl shadow-2xl overflow-hidden max-h-[70vh] flex flex-col z-40">
             <div className="overflow-y-auto p-4 custom-scrollbar flex flex-col gap-6">
               
-              {/* Cursos */}
-              {searchResults.cursos.length > 0 && (
-                <div>
-                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Cursos & Clases</h4>
-                  {searchResults.cursos.map((curso) => (
-                    <Link to={`/cursos/${curso.id}`} key={curso.id} onClick={() => setIsSearchOpen(false)} className="flex items-center gap-3 p-2 hover:bg-itec-gray rounded-lg transition-colors">
-                      <div className="w-10 h-10 rounded bg-blue-500/20 flex items-center justify-center text-blue-400"><div className="w-5 h-5"><Icons type="play" /></div></div>
-                      <div><p className="text-sm font-bold text-white">{curso.title}</p><p className="text-[11px] text-gray-400">Ver curso</p></div>
-                    </Link>
-                  ))}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-6 gap-3">
+                   <div className="w-6 h-6 border-2 border-itec-gray border-t-itec-blue rounded-full animate-spin"></div>
+                   <p className="text-xs text-gray-500">Conectando a la base de datos...</p>
                 </div>
-              )}
-
-              {/* Aportes */}
-              {searchResults.aportes.length > 0 && (
-                <div>
-                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Apuntes & Resúmenes</h4>
-                  {searchResults.aportes.map((aporte) => (
-                    <a href={aporte.link} target="_blank" rel="noreferrer" key={aporte.id} onClick={() => setIsSearchOpen(false)} className="flex items-center gap-3 p-2 hover:bg-itec-gray rounded-lg transition-colors">
-                      <div className="w-10 h-10 rounded bg-orange-500/20 flex items-center justify-center text-orange-400"><div className="w-5 h-5"><Icons type="documentFill" /></div></div>
-                      <div>
-                        <p className="text-sm font-bold text-white truncate max-w-[250px]">{aporte.title}</p>
-                        <p className="text-[11px] text-gray-400">{aporte.materia} • {aporte.tipo}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {/* Grupos */}
-              {searchResults.grupos.length > 0 && (
-                <div>
-                  <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Grupos de WhatsApp</h4>
-                  {searchResults.grupos.map((grupo) => (
-                    <a href={grupo.link} target="_blank" rel="noreferrer" key={grupo.id} onClick={() => setIsSearchOpen(false)} className="flex items-center gap-3 p-2 hover:bg-itec-gray rounded-lg transition-colors">
-                      <div className="w-10 h-10 rounded bg-green-500/20 flex items-center justify-center text-green-400"><div className="w-5 h-5"><Icons type="users" /></div></div>
-                      <div>
-                        <p className="text-sm font-bold text-white">{grupo.materia}</p>
-                        <p className="text-[11px] text-gray-400">Comisión: {grupo.comision} • {grupo.carrera.toUpperCase()}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {searchResults.cursos.length === 0 && searchResults.aportes.length === 0 && searchResults.grupos.length === 0 && (
-                <div className="text-center py-6">
-                  {isLoading ? (
-                     <div className="w-6 h-6 border-2 border-itec-gray border-t-itec-blue rounded-full animate-spin mx-auto"></div>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No encontramos resultados para "{searchQuery}"</p>
+              ) : searchResults ? (
+                <>
+                  {/* Categoría: Cursos */}
+                  {searchResults.cursos.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Cursos & Clases</h4>
+                      {searchResults.cursos.map((curso) => {
+                        const cursoId = curso.id || (curso as any)._id;
+                        return (
+                          <SearchResultItem 
+                            key={cursoId}
+                            type="curso"
+                            title={curso.title}
+                            subtitle="Ver ruta de aprendizaje"
+                            link={`/cursos/${cursoId}`}
+                            onClick={() => setIsSearchOpen(false)}
+                          />
+                        );
+                      })}
+                    </div>
                   )}
-                </div>
-              )}
+
+                  {/* Categoría: Aportes */}
+                  {searchResults.aportes.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Apuntes & Resúmenes</h4>
+                      {searchResults.aportes.map((aporte) => {
+                        const aporteId = aporte.id || (aporte as any)._id;
+                        return (
+                          <SearchResultItem 
+                            key={aporteId}
+                            type="aporte"
+                            title={aporte.title}
+                            subtitle={`${aporte.materia} • ${aporte.tipo}`}
+                            link={aporte.link}
+                            isExternal
+                            onClick={() => setIsSearchOpen(false)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Categoría: Grupos */}
+                  {searchResults.grupos.length > 0 && (
+                    <div>
+                      <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-2">Grupos de WhatsApp</h4>
+                      {searchResults.grupos.map((grupo) => {
+                        const grupoId = grupo.id || (grupo as any)._id;
+                        return (
+                          <SearchResultItem 
+                            key={grupoId}
+                            type="grupo"
+                            title={grupo.materia}
+                            subtitle={`Comisión: ${grupo.comision} • ${grupo.carrera.toUpperCase()}`}
+                            link={grupo.link}
+                            isExternal
+                            onClick={() => setIsSearchOpen(false)}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Sin resultados */}
+                  {searchResults.cursos.length === 0 && searchResults.aportes.length === 0 && searchResults.grupos.length === 0 && (
+                    <div className="text-center py-6">
+                      <p className="text-gray-500 text-sm">No encontramos resultados para "{searchQuery}"</p>
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           </div>
         )}
