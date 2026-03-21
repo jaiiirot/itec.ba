@@ -1,8 +1,9 @@
 import Course from "../models/Course.js";
+import ytpl from "ytpl"; // 🔴 ¡AQUÍ ESTÁ LA MAGIA QUE FALTABA!
 
 export const getCourses = async (req, res, next) => {
   try {
-    const courses = await Course.find().sort({ createdAt: -1 });
+    const courses = await Course.find().sort({ createdAt: -1 }).lean();
     res.status(200).json(courses);
   } catch (error) {
     next(error);
@@ -66,6 +67,38 @@ export const deleteCourse = async (req, res, next) => {
   try {
     await Course.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: "Curso eliminado" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const fetchPlaylistDetails = async (req, res, next) => {
+  try {
+    const { playlistUrl } = req.body;
+    if (!playlistUrl) {
+      const err = new Error("URL de la playlist es requerida");
+      err.statusCode = 400;
+      throw err;
+    }
+    // Usamos ytpl para hacer scraping de la playlist (límite de 50 videos)
+    const playlist = await ytpl(playlistUrl, { limit: 300 });
+
+    // Mapeamos los datos para que tengan el formato exacto de tu base de datos
+    const videos = playlist.items.map((item) => ({
+      youtubeId: item.id,
+      title: item.title,
+      duration: item.duration || "0:00",
+    }));
+
+    // Devolvemos el título de la playlist y sus videos
+    res.json({
+      title: playlist.title,
+      videos: videos,
+    });
+    // AQUI: Lógica que ya tenías para extraer videos usando tu API_KEY de Google/YouTube
+    // Como no veo tu lógica interna de YouTube en el snippet, asegúrate de pegarla aquí.
+    // ...
+    // res.status(200).json({ title: 'Título', videos: [...] });
   } catch (error) {
     next(error);
   }

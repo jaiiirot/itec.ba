@@ -55,7 +55,8 @@ export interface Video {
 }
 
 export interface CourseData {
-  id: string;
+  id?: string; // Hacemos el ID opcional
+  _id?: string;
   title: string;
   description: string;
   progress: number;
@@ -65,7 +66,7 @@ export interface CourseData {
   createdAt?: any;
 }
 
-const API_URL = 'http://127.0.0.1:5001/api/courses';
+const API_URL = 'http://127.0.0.1:5001/api/courses'; // Tu puerto actual
 
 const getToken = async () => {
   const token = await auth.currentUser?.getIdToken();
@@ -75,19 +76,25 @@ const getToken = async () => {
 
 export const coursesService = {
   getCourses: async (): Promise<CourseData[]> => {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    return data.map((c: any) => ({ ...c, id: c._id })); // Mapeo de _id a id
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Error obteniendo cursos');
+      const data = await res.json();
+      return Array.isArray(data) ? data.map((c: any) => ({ ...c, id: c._id })) : [];
+    } catch (error) {
+      console.error(error);
+      return []; // Si falla, devolvemos vacío para no romper React
+    }
   },
 
   getCourseById: async (id: string): Promise<CourseData | null> => {
     const res = await fetch(`${API_URL}/${id}`);
     if (!res.ok) return null;
     const data = await res.json();
-    return { ...data, id: data._id }; // Mapeo de _id a id
+    return { ...data, id: data._id }; 
   },
 
-  addCourse: async (courseData: Omit<CourseData, 'id'>): Promise<string> => {
+  addCourse: async (courseData: Omit<CourseData, 'id' | '_id'>): Promise<string> => {
     const token = await getToken();
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -98,15 +105,17 @@ export const coursesService = {
       body: JSON.stringify(courseData)
     });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Error al guardar el curso');
     return data._id;
   },
 
   deleteCourse: async (id: string): Promise<void> => {
     const token = await getToken();
-    await fetch(`${API_URL}/${id}`, {
+    const res = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
+    if (!res.ok) throw new Error('Error al eliminar el curso');
   },
 
   fetchPlaylistDetails: async (playlistUrl: string): Promise<{ title: string, videos: Video[] }> => {
@@ -122,10 +131,9 @@ export const coursesService = {
     
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Error al conectar con YouTube');
+      throw new Error(errorData.message || 'Error al conectar con YouTube');
     }
     
     return await res.json();
   },
 };
-

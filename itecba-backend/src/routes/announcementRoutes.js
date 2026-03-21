@@ -4,11 +4,20 @@ import {
   createAnnouncement,
   deactivateAnnouncement,
 } from "../controllers/announcementController.js";
+import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
+// 🟢 RUTAS PÚBLICAS
 router.get("/active", getActiveAnnouncement);
-router.post("/", createAnnouncement);
-router.put("/:id/deactivate", deactivateAnnouncement);
+
+// 🔴 RUTAS PROTEGIDAS
+router.post("/", verifyToken, requireAdmin, createAnnouncement);
+router.put(
+  "/:id/deactivate",
+  verifyToken,
+  requireAdmin,
+  deactivateAnnouncement,
+);
 
 export default router;

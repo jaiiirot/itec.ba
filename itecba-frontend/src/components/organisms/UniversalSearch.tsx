@@ -22,19 +22,45 @@ export const UniversalSearch: React.FC = () => {
 
   // 🔴 LAZY FETCHING: Solo cargamos la base de datos cuando el usuario interactúa
   const fetchSearchDataIfNeeded = async () => {
-    if (hasFetchedData || isLoading) return; // Si ya los tenemos o los estamos buscando, no hacemos nada
+    if (hasFetchedData || isLoading) return; 
     
     setIsLoading(true);
     try {
+      // 🛡️ 1. REVISAR EL CACHÉ PRIMERO
+      const cachedData = sessionStorage.getItem('itec_search_cache');
+      if (cachedData) {
+        const { courses, groups, resources, timestamp } = JSON.parse(cachedData);
+        // Si los datos tienen menos de 10 minutos (600000 milisegundos), usamos el caché
+        if (Date.now() - timestamp < 600000) {
+          setDbCourses(courses);
+          setDbGroups(groups);
+          setDbResources(resources);
+          setHasFetchedData(true);
+          setIsLoading(false);
+          return; // Cortamos acá, no llamamos a la base de datos
+        }
+      }
+
+      // 🌐 2. SI NO HAY CACHÉ O ESTÁ VIEJO, PEDIMOS AL SERVIDOR
       const [courses, groups, resources] = await Promise.all([
         coursesService.getCourses(),
         groupsService.getApprovedGroups(),
         resourcesService.getApprovedResources()
       ]);
+      
       setDbCourses(courses);
       setDbGroups(groups);
       setDbResources(resources);
-      setHasFetchedData(true); // Marcamos como completado para guardar en caché la sesión actual
+      setHasFetchedData(true); 
+
+      // 💾 3. GUARDAMOS EN CACHÉ PARA LA PRÓXIMA VEZ
+      sessionStorage.setItem('itec_search_cache', JSON.stringify({
+        courses,
+        groups,
+        resources,
+        timestamp: Date.now()
+      }));
+
     } catch (error) {
       console.error("Error al cargar datos para el buscador", error);
     } finally {

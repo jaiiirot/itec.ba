@@ -6,13 +6,17 @@ import {
   approveResource,
   deleteResource,
 } from "../controllers/resourceController.js";
+import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js"; // 🔴 IMPORTAMOS SEGURIDAD
 
 const router = Router();
 
+// 🟢 RUTAS PÚBLICAS
 router.get("/", getApprovedResources);
-router.get("/pending", getPendingResources);
 router.post("/", createResource);
-router.put("/:id/approve", approveResource);
-router.delete("/:id", deleteResource);
+
+// 🔴 RUTAS PROTEGIDAS (Solo Admins)
+router.get("/pending", verifyToken, requireAdmin, getPendingResources);
+router.put("/:id/approve", verifyToken, requireAdmin, approveResource);
+router.delete("/:id", verifyToken, requireAdmin, deleteResource);
 
 export default router;

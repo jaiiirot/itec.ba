@@ -2,10 +2,14 @@ import Announcement from "../models/Announcement.js";
 
 export const getActiveAnnouncement = async (req, res, next) => {
   try {
-    const announcement = await Announcement.findOne({ active: true }).sort({
-      createdAt: -1,
-    });
-    res.status(200).json(announcement);
+    // 👇 CAMBIO AQUÍ: Usamos find() en lugar de findOne()
+    const announcements = await Announcement.find({ active: true })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
+    // Ahora announcements siempre será un Array (ej: [] o [{...}])
+    res.status(200).json(announcements);
   } catch (error) {
     next(error);
   }

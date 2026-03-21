@@ -2,7 +2,7 @@ import Link from "../models/Link.js";
 
 export const getLinks = async (req, res, next) => {
   try {
-    const links = await Link.find().sort({ order: 1 });
+    const links = await Link.find().sort({ order: 1 }).lean();
     res.status(200).json(links);
   } catch (error) {
     next(error);

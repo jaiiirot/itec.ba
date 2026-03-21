@@ -20,8 +20,9 @@ export const GlobalAnnouncement: React.FC = () => {
             setIsVisible(true);
           }
         }
-      } catch {
-        console.error("Error buscando avisos globales");
+      } catch (error) {
+        // Ahora sí te dirá el motivo real (ej: "Failed to fetch")
+        console.error("Error buscando avisos globales:", error);
       }
     };
     

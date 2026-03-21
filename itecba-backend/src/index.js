@@ -61,7 +61,7 @@ app.get("/health", (req, res) => {
 // 5. MANEJADOR GLOBAL DE ERRORES (Siempre va al final)
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo de forma segura en el puerto ${PORT}`);
 });

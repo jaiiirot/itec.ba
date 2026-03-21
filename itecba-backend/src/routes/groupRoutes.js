@@ -6,13 +6,17 @@ import {
   approveGroup,
   deleteGroup,
 } from "../controllers/groupController.js";
+import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
+// 🟢 RUTAS PÚBLICAS
 router.get("/", getApprovedGroups);
-router.get("/pending", getPendingGroups); // 🔒 Debería estar protegida por admin auth
-router.post("/", createGroup);
-router.put("/:id/approve", approveGroup); // 🔒 Debería estar protegida
-router.delete("/:id", deleteGroup); // 🔒 Debería estar protegida
+router.post("/", createGroup); // Subir un grupo queda pendiente de aprobación
+
+// 🔴 RUTAS PROTEGIDAS
+router.get("/pending", verifyToken, requireAdmin, getPendingGroups);
+router.put("/:id/approve", verifyToken, requireAdmin, approveGroup);
+router.delete("/:id", verifyToken, requireAdmin, deleteGroup);
 
 export default router;

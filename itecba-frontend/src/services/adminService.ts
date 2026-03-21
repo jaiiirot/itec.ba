@@ -123,18 +123,30 @@ export const adminService = {
     return data._id;
   },
 
-  getActiveAnnouncements: async (): Promise<AnnouncementData[]> => {
-    const res = await fetch(`${API_URL_ANNOUNCEMENTS}/active`);
-    const data = await res.json();
-    
-    // Mapeo para que el Frontend de React siga creyendo que es Firebase
-    return data.map((a: any) => ({
-      ...a,
-      id: a._id,
-      // React espera un objeto de Firebase Timestamp, así que lo simulamos convirtiendo la fecha de Mongo:
-      expiresAt: { toDate: () => new Date(a.expiresAt) },
-      createdAt: { toDate: () => new Date(a.createdAt) }
-    }));
+getActiveAnnouncements: async (): Promise<AnnouncementData[]> => {
+    try {
+      const res = await fetch(`${API_URL_ANNOUNCEMENTS}/active`);
+      const data = await res.json();
+      
+      // 🛡️ ESCUDO: Si data es null, undefined, o no es un arreglo, devolvemos un arreglo vacío
+      if (!data || !Array.isArray(data)) {
+        console.warn("El backend no devolvió una lista válida de avisos:", data);
+        return [];
+      }
+
+      // Mapeo para que el Frontend de React siga creyendo que es Firebase
+      return data.map((a: any) => ({
+        ...a,
+        id: a._id,
+        // React espera un objeto de Firebase Timestamp, así que lo simulamos convirtiendo la fecha de Mongo:
+        expiresAt: { toDate: () => new Date(a.expiresAt || Date.now()) },
+        createdAt: { toDate: () => new Date(a.createdAt || Date.now()) }
+      }));
+    } catch (error) {
+      // 🛡️ Si el servidor está apagado o falla, atrapamos el error y evitamos que explote
+      console.error("Fallo de conexión al buscar avisos:", error);
+      return []; 
+    }
   },
 
   deleteAnnouncement: async (id: string): Promise<void> => {

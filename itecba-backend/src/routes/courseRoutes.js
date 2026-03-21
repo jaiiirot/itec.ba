@@ -2,20 +2,23 @@ import { Router } from "express";
 import {
   getCourses,
   getCourseById,
-  createCourse, // 🔴 Cambiado de addCourse a createCourse
+  createCourse,
   updateCourse,
   deleteCourse,
+  fetchPlaylistDetails, // 🔴 IMPORTA LA NUEVA FUNCIÓN
 } from "../controllers/courseController.js";
+import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Rutas públicas
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
 
-// Rutas protegidas (Idealmente aquí iría tu middleware de Auth para Admins)
-router.post("/", createCourse); // 🔴 Actualizado
-router.put("/:id", updateCourse);
-router.delete("/:id", deleteCourse);
+// 🔴 AGREGA ESTA LÍNEA PARA YOUTUBE
+router.post("/fetch-playlist", verifyToken, requireAdmin, fetchPlaylistDetails);
+
+router.post("/", verifyToken, requireAdmin, createCourse);
+router.put("/:id", verifyToken, requireAdmin, updateCourse);
+router.delete("/:id", verifyToken, requireAdmin, deleteCourse);
 
 export default router;

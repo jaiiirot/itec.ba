@@ -2,20 +2,26 @@ import Resource from "../models/Resource.js";
 
 export const getApprovedResources = async (req, res, next) => {
   try {
-    const resources = await Resource.find({ status: "approved" }).sort({
-      createdAt: -1,
-    });
+    // 🔴 CORRECCIÓN: Buscamos isApproved: true
+    const resources = await Resource.find({ isApproved: true })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
     res.status(200).json(resources);
   } catch (error) {
     next(error);
-  } // 🔴 Enviamos el error al Manejador Global
+  }
 };
 
 export const getPendingResources = async (req, res, next) => {
   try {
-    const resources = await Resource.find({ status: "pending" }).sort({
-      createdAt: -1,
-    });
+    // 🔴 CORRECCIÓN: Buscamos isApproved: false
+    const resources = await Resource.find({ isApproved: false })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
     res.status(200).json(resources);
   } catch (error) {
     next(error);
@@ -24,12 +30,20 @@ export const getPendingResources = async (req, res, next) => {
 
 export const createResource = async (req, res, next) => {
   try {
-    const { title, link, materia, carrera } = req.body;
+    const { title, carrera, nivel, materia, tipo, formato, link } = req.body;
 
-    // 🔴 VALIDACIÓN: Bloqueamos peticiones vacías
-    if (!title || !link || !materia || !carrera) {
+    // 🔴 VALIDACIÓN: Tu modelo exige todos estos campos, si falta uno crashea
+    if (
+      !title ||
+      !carrera ||
+      !nivel ||
+      !materia ||
+      !tipo ||
+      !formato ||
+      !link
+    ) {
       const err = new Error(
-        "Faltan campos obligatorios (title, link, materia, carrera)",
+        "Faltan campos obligatorios (title, carrera, nivel, materia, tipo, formato, link)",
       );
       err.statusCode = 400; // Bad Request
       throw err;
@@ -45,9 +59,10 @@ export const createResource = async (req, res, next) => {
 
 export const approveResource = async (req, res, next) => {
   try {
+    // 🔴 CORRECCIÓN: Actualizamos isApproved a true
     const resource = await Resource.findByIdAndUpdate(
       req.params.id,
-      { status: "approved" },
+      { isApproved: true },
       { new: true },
     );
     if (!resource) {
