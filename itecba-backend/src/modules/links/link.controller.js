@@ -1,4 +1,4 @@
-import Link from "../models/Link.js";
+import Link from "./link.model.js";
 
 export const getLinks = async (req, res, next) => {
   try {

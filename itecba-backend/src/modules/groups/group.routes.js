@@ -5,7 +5,7 @@ import {
   createGroup,
   approveGroup,
   deleteGroup,
-} from "../controllers/groupController.js";
+} from "./group.controller.js";
 import { verifyToken, requireAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = Router();

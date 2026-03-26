@@ -1,4 +1,4 @@
-import Course from "../models/Course.js";
+import Course from "./course.model.js";
 import ytpl from "ytpl"; // 🔴 ¡AQUÍ ESTÁ LA MAGIA QUE FALTABA!
 
 export const getCourses = async (req, res, next) => {

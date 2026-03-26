@@ -1,4 +1,4 @@
-import Group from "./Group.js";
+import Group from "./group.model.js";
 
 export const getApprovedGroups = async (req, res, next) => {
   try {
