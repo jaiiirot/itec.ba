@@ -17,6 +17,7 @@ import resourceRoutes from "./routes/resourceRoutes.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import linksRoutes from "./routes/linksRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/links", linksRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.get("/health", (req, res) => {
   res
