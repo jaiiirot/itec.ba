@@ -5,8 +5,8 @@ import {
   createResource,
   approveResource,
   deleteResource,
-} from "../controllers/resourceController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js"; // 🔴 IMPORTAMOS SEGURIDAD
+} from "./resource.controller.js";
+import { verifyToken, requireAdmin } from "../../middlewares/authMiddleware.js"; // 🔴 IMPORTAMOS SEGURIDAD
 
 const router = Router();
 

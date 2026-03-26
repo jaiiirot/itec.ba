@@ -1,4 +1,4 @@
-import Announcement from "../models/Announcement.js";
+import Announcement from "./ads.model.js";
 
 export const getActiveAnnouncement = async (req, res, next) => {
   try {

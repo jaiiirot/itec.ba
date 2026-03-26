@@ -12,12 +12,12 @@ import connectDB from "./config/mongo.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 
 // Importación de Rutas (Asegúrate de que estos archivos también usen export default)
-import announcementRoutes from "./routes/announcementRoutes.js";
-import resourceRoutes from "./routes/resourceRoutes.js";
-import groupRoutes from "./routes/groupRoutes.js";
-import linksRoutes from "./routes/linksRoutes.js";
-import courseRoutes from "./routes/courseRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
+import announcementRoutes from "modules/ads/ads.routes.js";
+import resourceRoutes from "modules/resources/resource.routes.js";
+import groupRoutes from "modules/groups/group.routes.js";
+import linksRoutes from "modules/links/link.routes.js";
+import courseRoutes from "modules/courses/course.routes.js";
+import aiRoutes from "modules/ais/ai.routes.js";
 
 const app = express();
 

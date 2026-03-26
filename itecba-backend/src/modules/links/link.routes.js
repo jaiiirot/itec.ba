@@ -4,8 +4,8 @@ import {
   createLink,
   updateLink,
   deleteLink,
-} from "../controllers/linksController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js"; // 🔴 Importamos la seguridad
+} from "./link.controller.js";
+import { verifyToken, requireAdmin } from "../../middlewares/authMiddleware.js"; // 🔴 Importamos la seguridad
 
 const router = Router();
 

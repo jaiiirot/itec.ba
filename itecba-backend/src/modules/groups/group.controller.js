@@ -1,10 +1,12 @@
-import Group from "../models/Group.js";
+import Group from "./Group.js";
 
 export const getApprovedGroups = async (req, res, next) => {
   try {
-    const groups = await Group.find({ status: "approved" }).sort({
-      createdAt: -1,
-    }).lean();
+    const groups = await Group.find({ status: "approved" })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
     res.status(200).json(groups);
   } catch (error) {
     next(error);
@@ -13,9 +15,11 @@ export const getApprovedGroups = async (req, res, next) => {
 
 export const getPendingGroups = async (req, res, next) => {
   try {
-    const groups = await Group.find({ status: "pending" }).sort({
-      createdAt: -1,
-    }).lean();
+    const groups = await Group.find({ status: "pending" })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
     res.status(200).json(groups);
   } catch (error) {
     next(error);

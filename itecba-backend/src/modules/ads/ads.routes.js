@@ -3,8 +3,8 @@ import {
   getActiveAnnouncement,
   createAnnouncement,
   deactivateAnnouncement,
-} from "../controllers/announcementController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
+} from "./ads.controller.js";
+import { verifyToken, requireAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = Router();
 

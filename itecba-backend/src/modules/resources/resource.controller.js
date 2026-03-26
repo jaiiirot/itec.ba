@@ -1,4 +1,4 @@
-import Resource from "../models/Resource.js";
+import Resource from "./resource.model.js";
 
 export const getApprovedResources = async (req, res, next) => {
   try {

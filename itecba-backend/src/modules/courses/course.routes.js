@@ -7,7 +7,7 @@ import {
   deleteCourse,
   fetchPlaylistDetails, // 🔴 IMPORTA LA NUEVA FUNCIÓN
 } from "../controllers/courseController.js";
-import { verifyToken, requireAdmin } from "../middlewares/authMiddleware.js";
+import { verifyToken, requireAdmin } from "../../middlewares/authMiddleware.js";
 
 const router = Router();
 
