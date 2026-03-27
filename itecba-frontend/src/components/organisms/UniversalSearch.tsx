@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Icons } from "../atoms/Icons";
 import { SearchResultItem } from "../molecules/SearchResultItem";
 
-import { coursesService, type CourseData } from "../../services/coursesService";
+import { coursesService, type CourseData } from "../../features/courses/services/coursesService";
 import { groupsService, type GroupData } from "../../services/groupsService";
 import { resourcesService, type ResourceData } from "../../services/resourcesService";
 

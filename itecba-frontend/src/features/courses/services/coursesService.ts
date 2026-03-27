@@ -45,7 +45,7 @@
 //   }
 // };
 
-import { auth } from '../lib/firebase';
+import { auth } from '../../../lib/firebase';
 
 export interface Video {
   id: string;

@@ -4,13 +4,13 @@ import { Button } from "../components/atoms/Button";
 import { PageHeader } from "../components/molecules/PageHeader";
 
 import { useAuth } from "../context/AuthContext";
-import { coursesService } from "../services/coursesService";
+import { coursesService } from "../features/courses/services/coursesService";
 
 // Importamos el nuevo organismo
 import {
   CourseGrid,
   type CourseWithLocalProgress,
-} from "../components/organisms/CourseGrid";
+} from "../features/courses/components/organisms/CourseGrid"
 
 // 🔴 LAZY LOADING: El modal no se importa hasta que el Admin hace clic en "Subir Clase"
 const AddCourseModal = React.lazy(() =>

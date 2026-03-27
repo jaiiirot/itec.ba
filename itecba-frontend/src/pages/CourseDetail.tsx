@@ -6,8 +6,8 @@ import { Icons } from '../components/atoms/Icons';
 import { CourseVideoPlayer } from '../components/organisms/CourseVideoPlayer';
 import { CoursePlaylist } from '../components/organisms/CoursePlaylist';
 
-import { coursesService } from '../services/coursesService';
-import type { CourseData, Video } from '../services/coursesService';
+import { coursesService } from "../features/courses/services/coursesService";
+import type { CourseData, Video } from '../features/courses/services/coursesService';
 import { resourcesService } from '../services/resourcesService';
 import type { ResourceData } from '../services/resourcesService';
 
