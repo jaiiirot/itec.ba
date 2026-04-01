@@ -74,7 +74,6 @@ export const GroupsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto pb-10 relative z-10">
         
         <PageHeader 
             title="Grupos de WhatsApp"
@@ -124,9 +123,8 @@ export const GroupsPage: React.FC = () => {
             onSpecialtyClick={handleSpecialtyClick} 
           />
         )}
-      </div>
 
-      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 " />}>
         {isAddModalOpen && (
           <AddGroupModal 
             isOpen={isAddModalOpen} 

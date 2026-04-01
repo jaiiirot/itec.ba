@@ -62,7 +62,6 @@ export const Explore: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto pb-10 relative z-10">
         
         {/* Cabecera Principal */}
         <PageHeader 
@@ -103,7 +102,7 @@ export const Explore: React.FC = () => {
           onAddClick={() => setIsAddModalOpen(true)} 
         />
 
-      </div>
+
 
       {/* Renderizado Perezoso de Modales (Solo se cargan si se activan) */}
       <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>

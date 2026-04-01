@@ -8,18 +8,22 @@ import { CoursePlaylist } from '../features/courses/components/organisms/CourseP
 
 import { coursesService, type CourseData, type Video} from "../features/courses/services/coursesService";
 import { resourcesService, type ResourceData} from '../features/resources/services/resourcesService';
+import { useAuth } from '../context/AuthContext'; // 🔴 NUEVO
 
+// Importa el modal de la misma forma que lo hiciste en MisCursos.tsx
+const AddCourseModal = React.lazy(() => import('../features/courses/components/organisms/AddCourseModal').then(m => ({ default: m.AddCourseModal })));
 // 🔴 MEJORA DE RENDIMIENTO: Lazy Loading para el modal de materiales
 const CourseMaterialModal = React.lazy(() => import('../features/courses/components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); 
-  
+  const { isAdmin } = useAuth(); // 🔴 NUEVO
+
   const [course, setCourse] = useState<CourseData | null>(null);
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [allResources, setAllResources] = useState<ResourceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // 🔴 NUEVO
   const [watchedVideos, setWatchedVideos] = useState<Set<string>>(new Set());
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -145,14 +149,25 @@ export const CourseDetail: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto pb-10 relative z-10">
-        
-        <div className="mb-6 flex items-center gap-3">
-          <Link to="/cursos" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-sm font-medium bg-itec-surface px-3 py-1.5 rounded-lg border border-itec-gray">
-            <div className="w-4 h-4"><Icons type="arrowLeft" /></div> Volver
-          </Link>
-          <span className="text-gray-600">/</span>
-          <span className="text-gray-600 text-sm font-bold truncate">{course.title}</span>
+    
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link to="/cursos" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5 text-sm font-medium bg-itec-surface px-3 py-1.5 rounded-lg border border-itec-gray">
+              <div className="w-4 h-4"><Icons type="arrowLeft" /></div> Volver
+            </Link>
+            <span className="text-gray-600">/</span>
+            <span className="text-gray-600 text-sm font-bold truncate">{course.title}</span>
+          </div>
+
+          {/* 🔴 NUEVO: Botón de Editar solo para Admins */}
+          {isAdmin && (
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="bg-itec-surface hover:bg-itec-gray border border-itec-gray text-white text-sm font-medium px-4 py-1.5 rounded-lg transition-colors flex items-center gap-2 w-fit"
+            >
+              <span>✏️</span> Editar Curso
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -179,7 +194,6 @@ export const CourseDetail: React.FC = () => {
             />
           </div>
         </div>
-      </div>
 
       {/* 🔴 Lazy Loading envolviendo el Modal */}
       <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
@@ -190,6 +204,19 @@ export const CourseDetail: React.FC = () => {
             relatedResources={relatedResources} 
           />
         )}
+        {/* 🔴 NUEVO: Lazy Loading del modal de Edición */}
+      {isAdmin && isEditModalOpen && (
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+          <AddCourseModal 
+            isOpen={isEditModalOpen} 
+            onClose={() => setIsEditModalOpen(false)} 
+            existingCourse={course} // Le pasamos los datos actuales para que los pre-cargue
+            onCourseAdded={(updatedCourse) => {
+              setCourse(updatedCourse); // Actualiza la pantalla instantáneamente
+            }}
+          />
+        </Suspense>
+      )}
       </Suspense>
 
     </DashboardLayout>

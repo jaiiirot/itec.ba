@@ -43,7 +43,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
         </div>
 
         {/* Contenido inyectado de la página */}
-        <div className="p-4 md:p-8 flex-1">{children}</div>
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">{children}</div>
       </main>
 
       {/* AÑADIR EL CHATBOT AQUÍ */}

@@ -14,7 +14,7 @@ export const CourseMaterialModal: React.FC<Props> = ({ isOpen, onClose, relatedR
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-3xl w-full max-w-lg shadow-2xl p-6 relative animate-in zoom-in-95 duration-200">
         <button onClick={onClose} className="absolute top-5 right-5 w-8 h-8 rounded-full bg-itec-bg border border-itec-gray flex items-center justify-center text-gray-500 hover:text-white transition-colors z-10">
           <div className="w-4 h-4"><Icons type="close" /></div>

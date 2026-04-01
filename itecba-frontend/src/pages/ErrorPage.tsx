@@ -133,7 +133,7 @@ export const ErrorPage: React.FC = () => {
 
         {/* CONTENIDO PRINCIPAL 404 */}
         <div className="relative z-10 mb-8 mt-10 animate-in slide-in-from-bottom-4 duration-700">
-          <h1 className="text-8xl md:text-[140px] font-black bg-clip-text text-itec-red leading-none mb-2 drop-shadow-lg">
+          <h1 className="text-8xl md:text-[140px] font-black bg-clip-text text-itec-red-skye leading-none mb-2 drop-shadow-lg">
             404
           </h1>
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">

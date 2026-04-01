@@ -35,35 +35,35 @@ export const PageHeader: React.FC<Props> = ({ title, description, iconType, imag
   };
 
   return (
-    <div className="text-center mb-10 animate-in fade-in zoom-in-95 duration-500 shrink-0">
-      
+    <div className="mb-8 animate-in fade-in zoom-in-95 shrink-0 flex flex-col items-center xl:items-start xl:flex-row">
       {/* 🔴 LÓGICA MEJORADA: Si es imagen, la mostramos gigante y sin caja. Si es icono, usamos la caja bonita. */}
       {imageUrl ? (
         <img 
           src={imageUrl} 
           alt="Logo" 
-          className="h-28 md:h-36 mb-6 mx-auto object-contain transition-transform hover:scale-105" 
+          className="h-28 md:h-36 mb-6 mx-auto object-contain " 
           style={{ filter: `drop-shadow(0px 0px 30px ${getGlowColor()})` }}
         />
       ) : (
-        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto border transition-all ${getThemeClasses()}`}>
+        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center my-auto mr-6 border transition-all ${getThemeClasses()}`}>
           <div className="w-8 h-8">
             {/* // eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <Icons type={iconType as any} />
           </div>
         </div>
       )}
-
-      <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">{title}</h1>
-      <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-        {description}
-      </p>
-      
-      {children && (
-        <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
-          {children}
-        </div>
-      )}
+      <div className='flex flex-col items-center mx-auto xl:items-start xl:mx-2'>
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">{title}</h1>
+        <p className="text-gray-400 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+          {description}
+        </p>
+      </div>
+        
+        {children && (
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 ml-0 xl:ml-auto">
+            {children}
+          </div>
+        )}
     </div>
   );
 };
