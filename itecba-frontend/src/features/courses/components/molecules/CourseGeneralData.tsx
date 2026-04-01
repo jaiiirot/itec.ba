@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input } from '../../../../components/atoms/Input';
+import { Input } from '@/components/atoms/Input';
 
 export const MATERIAS_UTN = [
   "Análisis Matemático",

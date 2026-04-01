@@ -2,7 +2,7 @@ import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { Dashboard } from "./pages/Dashboard";
-import { MisCursos } from "./pages/MisCursos";
+import { Courses } from "./pages/Courses";
 import { CourseDetail } from "./pages/CourseDetail";
 import { Explore } from "./pages/Explore"; 
 import { ChatPage } from "./pages/ChatPage";
@@ -13,6 +13,7 @@ import { NosotrosPage } from "./pages/NosotrosPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ErrorPage } from "./pages/ErrorPage";
 import { AdminPanel } from './pages/AdminPanel';
+import { ProgressPage } from './pages/ProgressPage';
 
 const router = createBrowserRouter([
   {
@@ -20,7 +21,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Dashboard /> },
-      { path: "cursos", element: <MisCursos /> },
+      { path: "cursos", element: <Courses /> },
       { path: "cursos/:id", element: <CourseDetail /> },
       { path: "explore", element: <Explore /> },
       { path: "chat", element: <ChatPage /> },
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: "admin", element: <AdminPanel /> },
       { path: "perfil", element: <ProfilePage /> }, // Cuando entra directo a Iniciar Sesión
       { path: "perfil/:username", element: <ProfilePage /> }, // Cuando ya tiene su usuario (Ej: /perfil/jtumiricuellar)
+      { path: "progreso", element: <ProgressPage />}
     ],
   },
 ]);

@@ -1,24 +1,32 @@
-// src/pages/MisCursos.tsx
-import React, { useState, useEffect, Suspense, useMemo } from "react";
-import { DashboardLayout } from "../components/templates/DashboardLayout";
-import { Button } from "../components/atoms/Button";
-import { PageHeader } from "../components/molecules/PageHeader";
+// src/pages/Courses.tsx
+import React, { useState, Suspense, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query"; // Importamos el manejador de caché
 
-import { useAuth } from "../context/AuthContext";
-import { coursesService } from "../features/courses/services/coursesService";
+// Importaciones con Alias Global
+import { DashboardLayout } from "@/components/templates/DashboardLayout";
+import { Button } from "@/components/atoms/Button";
+import { PageHeader } from "@/components/molecules/PageHeader";
+import { useAuth } from "@/context/AuthContext";
 
-import { CourseGrid, type CourseWithLocalProgress } from "../features/courses/components/organisms/CourseGrid";
-import { CourseFilters } from "../features/courses/components/molecules/CourseFilters";
+// Importaciones con Alias de Features
+import { coursesService } from "@features/courses/services/coursesService";
+import { useCourses } from "@features/courses/hooks/useCourses"; // <-- Tu nuevo Hook de React Query
+import { CourseGrid, type CourseWithLocalProgress } from "@features/courses/components/organisms/CourseGrid";
+import { CourseFilters } from "@features/courses/components/molecules/CourseFilters";
 
+// Lazy load del modal con Alias
 const AddCourseModal = React.lazy(() =>
-  import("../features/courses/components/organisms/AddCourseModal").then((m) => ({ default: m.AddCourseModal }))
+  import("@features/courses/components/organisms/AddCourseModal").then((m) => ({ default: m.AddCourseModal }))
 );
 
-export const MisCursos: React.FC = () => {
+export const Courses: React.FC = () => {
   const { isAdmin } = useAuth();
+  const queryClient = useQueryClient(); // Nos permite manipular los datos guardados en caché
 
-  const [courses, setCourses] = useState<CourseWithLocalProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 1. OBTENEMOS LOS DATOS DE LA CACHÉ/API CON REACT QUERY
+  // Extraemos "data" (le damos el alias dbCourses por defecto a un array vacío) y "isLoading"
+  const { data: dbCourses = [], isLoading } = useCourses();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Estados de los filtros
@@ -41,23 +49,17 @@ export const MisCursos: React.FC = () => {
     return 0;
   };
 
-  useEffect(() => {
-    setIsLoading(true);
-    coursesService
-      .getCourses()
-      .then((dbCourses) => {
-        const coursesWithProgress = dbCourses.map((course) => {
-          const courseId = course.id || (course as any)._id;
-          return {
-            ...course,
-            localProgress: calculateLocalProgress(courseId, course.videos?.length || 0),
-          };
-        });
-        setCourses(coursesWithProgress);
-      })
-      .catch((err) => console.error("Error cargando cursos:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  // 2. COMBINAMOS LOS DATOS CACHEADOS CON EL PROGRESO LOCAL DE LA PC DEL USUARIO
+  // Usamos useMemo para que no calcule esto en cada render, solo si cambia la DB (React Query)
+  const coursesWithProgress: CourseWithLocalProgress[] = useMemo(() => {
+    return dbCourses.map((course: any) => {
+      const courseId = course.id || course._id;
+      return {
+        ...course,
+        localProgress: calculateLocalProgress(courseId, course.videos?.length || 0),
+      };
+    });
+  }, [dbCourses]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -65,8 +67,15 @@ export const MisCursos: React.FC = () => {
 
     try {
       await coursesService.deleteCourse(id);
-      setCourses((prev) => prev.filter((c) => (c.id || (c as any)._id) !== id));
       localStorage.removeItem(`itec_course_${id}`);
+      
+      // 3. ACTUALIZAMOS LA CACHÉ INSTANTÁNEAMENTE (Optimistic Update)
+      // Removemos el curso de la memoria en lugar de hacer otro fetch
+      queryClient.setQueryData(['courses'], (oldData: any) => {
+        if (!oldData) return [];
+        return oldData.filter((c: any) => (c.id || c._id) !== id);
+      });
+      
     } catch {
       alert("Error al eliminar el curso.");
     }
@@ -74,25 +83,21 @@ export const MisCursos: React.FC = () => {
 
   // Extraer dinámicamente las materias que existen en los cursos cargados
   const materiasDisponibles = useMemo(() => {
-    const materias = courses.map(c => c.materia).filter(Boolean) as string[];
-    return Array.from(new Set(materias)).sort(); // Array único y ordenado
-  }, [courses]);
+    const materias = coursesWithProgress.map(c => c.materia).filter(Boolean) as string[];
+    return Array.from(new Set(materias)).sort();
+  }, [coursesWithProgress]);
 
   // Lógica de filtrado en tiempo real
   const filteredCourses = useMemo(() => {
-    return courses.filter((curso) => {
+    return coursesWithProgress.filter((curso) => {
       const cursoId = curso.id || (curso as any)._id || "";
       
-      // 1. Filtro por Búsqueda (Texto)
       const matchesSearch = 
         curso.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (curso.description && curso.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // 2. Filtro por Materia
       const matchesMateria = selectedMateria === "" || curso.materia === selectedMateria;
 
-      // 3. Filtro por Categoría (Inferimos "Oficial" por el ID temporalmente como lo tenías en CourseGrid, 
-      // o usamos la prop 'categoria' si ya viene de MongoDB)
       const isOficial = curso.categoria === 'Oficial' || cursoId.startsWith('seminario') || cursoId.startsWith('analisis');
       
       let matchesCategoria = true;
@@ -101,7 +106,7 @@ export const MisCursos: React.FC = () => {
 
       return matchesSearch && matchesMateria && matchesCategoria;
     });
-  }, [courses, searchQuery, selectedMateria, selectedCategoria]);
+  }, [coursesWithProgress, searchQuery, selectedMateria, selectedCategoria]);
 
   return (
     <DashboardLayout>
@@ -123,7 +128,6 @@ export const MisCursos: React.FC = () => {
           )}
         </PageHeader>
 
-        {/* COMPONENTE DE FILTROS APLICADO */}
         <CourseFilters 
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -134,10 +138,9 @@ export const MisCursos: React.FC = () => {
           materiasDisponibles={materiasDisponibles}
         />
 
-        {/* GRILLA CON LOS CURSOS FILTRADOS */}
         <CourseGrid
           courses={filteredCourses}
-          isLoading={isLoading}
+          isLoading={isLoading} // React Query te maneja este estado automáticamente
           isAdmin={isAdmin}
           onDelete={handleDelete}
         />
@@ -148,9 +151,12 @@ export const MisCursos: React.FC = () => {
           <AddCourseModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            onCourseAdded={(newCourse) =>
-              setCourses((prev) => [{ ...newCourse, localProgress: 0 }, ...prev])
-            }
+            onCourseAdded={(newCourse) => {
+              // 4. INVALIDAMOS LA CACHÉ CUANDO SE CREA UN CURSO
+              // Esto le avisa a React Query que los datos quedaron "viejos" 
+              // y automáticamente irá al backend a buscar el nuevo curso sin que hagas nada.
+              queryClient.invalidateQueries({ queryKey: ['courses'] });
+            }}
           />
         </Suspense>
       )}

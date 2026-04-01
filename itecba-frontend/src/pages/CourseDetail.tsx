@@ -1,92 +1,78 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { DashboardLayout } from '../components/templates/DashboardLayout';
-import { Icons } from '../components/atoms/Icons'; 
+import { useQueryClient } from '@tanstack/react-query'; // 🔴 Importamos el manejador de caché
 
-import { CourseVideoPlayer } from '../features/courses/components/organisms/CourseVideoPlayer';
-import { CoursePlaylist } from '../features/courses/components/organisms/CoursePlaylist';
+// Importaciones con Alias
+import { DashboardLayout } from '@/components/templates/DashboardLayout';
+import { Icons } from '@/components/atoms/Icons'; 
+import { useAuth } from '@/context/AuthContext';
 
-import { coursesService, type CourseData, type Video} from "../features/courses/services/coursesService";
-import { resourcesService, type ResourceData} from '../features/resources/services/resourcesService';
-import { useAuth } from '../context/AuthContext'; // 🔴 NUEVO
+import { CourseVideoPlayer } from '@features/courses/components/organisms/CourseVideoPlayer';
+import { CoursePlaylist } from '@features/courses/components/organisms/CoursePlaylist';
 
-// Importa el modal de la misma forma que lo hiciste en MisCursos.tsx
-const AddCourseModal = React.lazy(() => import('../features/courses/components/organisms/AddCourseModal').then(m => ({ default: m.AddCourseModal })));
-// 🔴 MEJORA DE RENDIMIENTO: Lazy Loading para el modal de materiales
-const CourseMaterialModal = React.lazy(() => import('../features/courses/components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
+// 🔴 Importamos tus hooks de React Query
+import { useCourseById } from '@features/courses/hooks/useCourses';
+import type { Video } from "@features/courses/services/coursesService";
+// Asumiendo que crearás este hook para resources, si no, lo cambias por tu service normal
+import { useResources } from '@features/resources/hooks/useResources'; 
+
+// Lazy Loading de Modales
+const AddCourseModal = React.lazy(() => import('@features/courses/components/organisms/AddCourseModal').then(m => ({ default: m.AddCourseModal })));
+const CourseMaterialModal = React.lazy(() => import('@features/courses/components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); 
-  const { isAdmin } = useAuth(); // 🔴 NUEVO
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [course, setCourse] = useState<CourseData | null>(null);
+  // 1. 🔴 REEMPLAZO DEL USEEFFECT: Usamos React Query para traer el curso y los recursos
+  const { data: course, isLoading: isCourseLoading } = useCourseById(id || '');
+  const { data: allResources = [], isLoading: isResourcesLoading } = useResources();
+
+  // Estados locales (Solo UI y Progreso)
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
-  const [allResources, setAllResources] = useState<ResourceData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // 🔴 NUEVO
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [watchedVideos, setWatchedVideos] = useState<Set<string>>(new Set());
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // 2. 🔴 Lógica de Progreso Local y Video Inicial
+  // Este useEffect solo se encarga de leer el localStorage y setear el video activo
+  // No hace llamadas a la API.
   useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return;
-      setIsLoading(true);
-      
-      try {
-        // Ejecución en paralelo (Más rápido)
-        const [fetchedCourse, dbResources] = await Promise.all([
-          coursesService.getCourseById(id),
-          resourcesService.getApprovedResources()
-        ]);
+    if (course && course.videos && course.videos.length > 0) {
+      const savedData = localStorage.getItem(`itec_course_${id}`);
+      let lastVideoId = null;
 
-        setAllResources(dbResources);
-
-        if (fetchedCourse) {
-          setCourse(fetchedCourse);
-          const savedData = localStorage.getItem(`itec_course_${id}`);
-          let lastVideoId = null;
-
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            setWatchedVideos(new Set(parsed.watched || []));
-            lastVideoId = parsed.lastVideo;
-          }
-
-          if (lastVideoId && fetchedCourse.videos) {
-            const last = fetchedCourse.videos.find(v => v.id === lastVideoId || (v as any)._id === lastVideoId);
-            setActiveVideo(last || fetchedCourse.videos[0]);
-          } else if (fetchedCourse.videos && fetchedCourse.videos.length > 0) {
-            setActiveVideo(fetchedCourse.videos[0]);
-          }
-        }
-      } catch (error) {
-        console.error("Error al cargar detalles del curso:", error);
-      } finally {
-        setIsLoading(false);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setWatchedVideos(new Set(parsed.watched || []));
+        lastVideoId = parsed.lastVideo;
       }
-    };
 
-    fetchData();
-  }, [id]);
+      if (lastVideoId) {
+        const last = course.videos.find((v: any) => v.id === lastVideoId || v._id === lastVideoId);
+        setActiveVideo(last || course.videos[0]);
+      } else {
+        setActiveVideo(course.videos[0]);
+      }
+    }
+  }, [course, id]); // Depende de que React Query termine de cargar 'course'
 
-  // 🔴 MEJORA DEL ALGORITMO: Filtra todos los parciales precisos sin limitarlos
+  // Filtrado de recursos relacionados
   const relatedResources = useMemo(() => {
     if (!course) return [];
     
     const courseId = course.id || (course as any)._id || "";
-    // Limpiamos el título para que el match sea más exacto (Ej: "Curso de Álgebra" -> "álgebra")
     const cleanCourseTitle = course.title.toLowerCase().replace('curso de ', '').trim();
 
-    return allResources.filter(res => {
+    return allResources.filter((res: any) => {
       const rSubj = res.materia.toLowerCase();
-      // Match bidireccional inteligente
       const isMatch = cleanCourseTitle.includes(rSubj) || rSubj.includes(cleanCourseTitle);
       const isIngreso = courseId.includes('seminario') && res.carrera === 'ingreso';
 
       return isMatch || isIngreso;
     }); 
-    // 🔴 ELIMINAMOS EL .slice(0,4) -> Ahora si hay 15 parciales, el alumno verá los 15 en el modal
   }, [course, allResources]);
 
   const handleVideoSelect = (video: Video) => {
@@ -123,7 +109,8 @@ export const CourseDetail: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  // Estados de carga (Controlados por React Query)
+  if (isCourseLoading || isResourcesLoading) {
     return (
       <DashboardLayout>
         <div className="flex justify-center items-center h-[60vh]">
@@ -159,7 +146,6 @@ export const CourseDetail: React.FC = () => {
             <span className="text-gray-600 text-sm font-bold truncate">{course.title}</span>
           </div>
 
-          {/* 🔴 NUEVO: Botón de Editar solo para Admins */}
           {isAdmin && (
             <button
               onClick={() => setIsEditModalOpen(true)}
@@ -195,7 +181,6 @@ export const CourseDetail: React.FC = () => {
           </div>
         </div>
 
-      {/* 🔴 Lazy Loading envolviendo el Modal */}
       <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
         {isMaterialModalOpen && (
           <CourseMaterialModal 
@@ -204,15 +189,18 @@ export const CourseDetail: React.FC = () => {
             relatedResources={relatedResources} 
           />
         )}
-        {/* 🔴 NUEVO: Lazy Loading del modal de Edición */}
+        
       {isAdmin && isEditModalOpen && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
           <AddCourseModal 
             isOpen={isEditModalOpen} 
             onClose={() => setIsEditModalOpen(false)} 
-            existingCourse={course} // Le pasamos los datos actuales para que los pre-cargue
+            existingCourse={course}
             onCourseAdded={(updatedCourse) => {
-              setCourse(updatedCourse); // Actualiza la pantalla instantáneamente
+              // 3. 🔴 Al editar, le decimos a React Query que vuelva a buscar los datos
+              queryClient.invalidateQueries({ queryKey: ['course', id] });
+              queryClient.invalidateQueries({ queryKey: ['courses'] });
+              setIsEditModalOpen(false);
             }}
           />
         </Suspense>

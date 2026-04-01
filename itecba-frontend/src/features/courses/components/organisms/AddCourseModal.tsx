@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../../../../components/atoms/Button';
-import { Icons } from '../../../../components/atoms/Icons';
+import { Button } from '@/components/atoms/Button';
+import { Icons } from '@/components/atoms/Icons';
 import { coursesService } from '../../services/coursesService';
 import type { CourseData } from '../../services/coursesService';
 import { CourseGeneralData } from '../molecules/CourseGeneralData';
