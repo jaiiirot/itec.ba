@@ -1,22 +1,26 @@
-import React from 'react';
+// src/features/progress/components/organisms/ProgressDashboard.tsx
+import React, { useMemo } from 'react';
 import { ProgressTable } from '../molecules/ProgressTable';
 import type { CareerProgress } from '../../types/progress';
+import type { ProgressMetrics } from '../../hooks/useProgress';
 
 interface Props {
-  data: CareerProgress;
+  data: CareerProgress & { metrics: ProgressMetrics };
+  onUpdateStatus: (id: string, status: 'aprobada' | 'regular' | 'disponible') => void;
 }
 
-export const ProgressDashboard: React.FC<Props> = ({ data }) => {
-  // Agrupar materias por nivel
-  const levels = [1, 2, 3, 4, 5];
+export const ProgressDashboard: React.FC<Props> = ({ data, onUpdateStatus }) => {
+  
+  // Calcula dinámicamente cuántos niveles tiene la carrera (Ej: 1 al 5, o 1 al 6)
+  const levels = useMemo(() => {
+    const allLevels = data.subjects.map(s => s.level);
+    return Array.from(new Set(allLevels)).sort((a, b) => a - b);
+  }, [data.subjects]);
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Header Interactivo Mantenido de tu HTML */}
       <section className="relative overflow-hidden rounded-3xl border border-itec-gray shadow-2xl p-6 md:p-8 bg-itec-surface" style={{ background: 'linear-gradient(145deg, rgba(56, 189, 248, 0.05) 0%, transparent 100%)' }}>
-        <div className="absolute -top-10 -right-10 pointer-events-none opacity-[0.05] animate-[float_10s_ease-in-out_infinite]">
-          <svg width="256" height="256" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-itec-blue transform rotate-12"><path d="m18 16 4-4-4-4"></path><path d="m6 8-4 4 4 4"></path><path d="m14.5 4-5 16"></path></svg>
-        </div>
+        {/* ... (Mantén los SVG decorativos y el encabezado igual) ... */}
         
         <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="space-y-2">
@@ -42,17 +46,16 @@ export const ProgressDashboard: React.FC<Props> = ({ data }) => {
           </div>
         </div>
 
-        {/* Barra de colores unificada */}
+        {/* 🔴 BARRA DE PROGRESO DINÁMICA */}
         <div className="mt-8 space-y-3">
           <div className="w-full bg-itec-bg rounded-full h-3 overflow-hidden flex border border-itec-gray">
-            <div className="bg-green-500" style={{ width: '12%' }}></div>
-            <div className="bg-fuchsia-500" style={{ width: '8%' }}></div>
-            <div className="bg-yellow-400" style={{ width: '5%' }}></div>
+            <div className="bg-green-500 transition-all duration-1000" style={{ width: `${data.metrics.porcentajeAprobadas}%` }}></div>
+            <div className="bg-fuchsia-500 transition-all duration-1000" style={{ width: `${data.metrics.porcentajeRegulares}%` }}></div>
           </div>
           <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>APROBADAS</div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500"></span>REGULARIZADAS</div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>CURSANDO</div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>APROBADAS ({data.metrics.aprobadas})</div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500"></span>REGULARES ({data.metrics.regulares})</div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400"><span className="w-2.5 h-2.5 rounded-full bg-itec-bg border border-itec-gray"></span>FALTANTES ({data.metrics.total - data.metrics.aprobadas})</div>
           </div>
         </div>
       </section>
@@ -60,30 +63,14 @@ export const ProgressDashboard: React.FC<Props> = ({ data }) => {
       {/* Renderizado Dinámico de Niveles */}
       <div className="space-y-12">
         {levels.map(level => {
-          const levelSubjects = data.subjects.filter(s => s.level === level);
-          if (levelSubjects.length === 0) return null;
-
+          const levelSubjects = data.subjects.filter((s: any) => s.level === level);
           return (
-            <section key={`level-${level}`}>
-              <div className="flex flex-col md:flex-row md:items-center gap-6 mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-itec-blue to-purple-600 text-white flex items-center justify-center font-black text-xl shadow-lg">
-                    {level}
-                  </div>
-                  <h2 className="text-2xl font-bold text-white">Nivel {level}</h2>
-                </div>
-                <div className="flex-1 md:ml-8 hidden md:block">
-                   <div className="w-full h-[1px] bg-itec-gray"></div>
-                </div>
-              </div>
-
-            <div className="space-y-8">
-            {[1, 2, 3, 4, 5].map(level => {
-                const levelSubjects = data.subjects.filter(s => s.level === level);
-                return <ProgressTable key={level} level={level} subjects={levelSubjects} />;
-            })}
-            </div>
-            </section>
+            <ProgressTable 
+              key={level} 
+              level={level} 
+              subjects={levelSubjects} 
+              onUpdateStatus={onUpdateStatus}
+            />
           );
         })}
       </div>

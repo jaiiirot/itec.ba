@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 export const ProgressPage: React.FC = () => {
   const { user } = useAuth();
-  const { data, isLoading, isError } = useProgress();
+  const { data, isLoading, isError, updateSubjectStatus} = useProgress();
 
   if (!user) {
     return (
@@ -46,7 +46,7 @@ export const ProgressPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="max-w-[1400px] mx-auto pb-20">
-        <ProgressDashboard data={data} />
+        <ProgressDashboard data={data} onUpdateStatus={updateSubjectStatus}/>
       </div>
     </DashboardLayout>
   );
