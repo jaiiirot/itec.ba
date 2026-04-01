@@ -14,7 +14,7 @@ import {
 
 // 🔴 LAZY LOADING: El modal no se importa hasta que el Admin hace clic en "Subir Clase"
 const AddCourseModal = React.lazy(() =>
-  import("../components/organisms/AddCourseModal").then((m) => ({
+  import("../features/courses/components/organisms/AddCourseModal").then((m) => ({
     default: m.AddCourseModal,
   })),
 );

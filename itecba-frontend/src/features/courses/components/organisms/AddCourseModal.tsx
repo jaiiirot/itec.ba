@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Input } from '../atoms/Input';
-import { Button } from '../atoms/Button';
-import { Icons } from '../atoms/Icons';
+import { Input } from '../../../../components/atoms/Input';
+import { Button } from '../../../../components/atoms/Button';
+import { Icons } from '../../../../components/atoms/Icons';
 import { coursesService } from '../../services/coursesService';
 import type { CourseData } from '../../services/coursesService';
 
