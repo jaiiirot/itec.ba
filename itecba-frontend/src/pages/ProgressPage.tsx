@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 export const ProgressPage: React.FC = () => {
   const { user } = useAuth();
-  const { data, isLoading, isError, updateSubjectStatus} = useProgress();
+  const { data, isLoading, isError, updateSubjectStatus, switchCareer } = useProgress();
 
   if (!user) {
     return (
@@ -43,11 +43,15 @@ export const ProgressPage: React.FC = () => {
     );
   }
 
-  return (
+return (
     <DashboardLayout>
-      <div className="max-w-[1400px] mx-auto pb-20">
-        <ProgressDashboard data={data} onUpdateStatus={updateSubjectStatus}/>
+      <div className="max-w-[1200px] mx-auto pb-20 pt-6"> {/* Se achicó un poco el max-w para que la tabla se vea más compacta */}
+        <ProgressDashboard 
+          data={data} 
+          onUpdateStatus={updateSubjectStatus} // <-- MUY IMPORTANTE pasar esta prop
+          onSwitchCareer={switchCareer} // <--- AÑADIR ESTO
+        />
       </div>
     </DashboardLayout>
-  );
+)
 };

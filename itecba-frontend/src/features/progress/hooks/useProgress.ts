@@ -1,4 +1,3 @@
-// src/features/progress/hooks/useProgress.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { CAREERS_DATA, type SubjectDef } from '@/data/carreras';
@@ -17,23 +16,52 @@ export interface ProgressMetrics {
   porcentajeRegulares: number;
 }
 
+// Mapa de nombres para la UI
+export const CAREER_NAMES: Record<string, string> = {
+  sistemas: 'Ingeniería en Sistemas de Información',
+  mecanica: 'Ingeniería Mecánica',
+  electronica: 'Ingeniería Electrónica',
+  electrica: 'Ingeniería Eléctrica',
+  civil: 'Ingeniería Civil',
+  industrial: 'Ingeniería Industrial',
+  quimica: 'Ingeniería Química',
+  naval: 'Ingeniería Naval',
+  textil: 'Ingeniería Textil'
+};
+
 export const useProgress = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  // Clave única para el localStorage de este usuario
   const storageKey = `itec_progress_${user?.uid}`;
 
-  // Cargar datos locales o crear estado inicial
   const loadUserData = () => {
     const stored = localStorage.getItem(storageKey);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Migración automática si viene de la versión anterior (1 sola carrera)
+      if (parsed.careerId && !parsed.enrolledCareers) {
+        return {
+          activeCareer: parsed.careerId,
+          enrolledCareers: [parsed.careerId],
+          progress: {
+            [parsed.careerId]: {
+              passedIds: parsed.passedIds || [],
+              regularIds: parsed.regularIds || [],
+              grades: parsed.grades || {},
+              years: parsed.years || {}
+            }
+          }
+        };
+      }
+      return parsed;
+    }
+    // Estado inicial por defecto
     return {
-      careerId: 'sistemas',
-      passedIds: [],
-      regularIds: [],
-      grades: {},
-      years: {}
+      activeCareer: 'sistemas',
+      enrolledCareers: ['sistemas'],
+      progress: {
+        'sistemas': { passedIds: [], regularIds: [], grades: {}, years: {} }
+      }
     };
   };
 
@@ -41,55 +69,62 @@ export const useProgress = () => {
     queryKey: ['progress', user?.uid],
     queryFn: () => {
       const userData = loadUserData();
-      const careerDef = CAREERS_DATA[userData.careerId];
+      const activeCareerId = userData.activeCareer;
+      const careerDef = CAREERS_DATA[activeCareerId];
       
       if (!careerDef) throw new Error("Carrera no encontrada");
+
+      const progressData = userData.progress[activeCareerId] || { passedIds: [], regularIds: [], grades: {}, years: {} };
+
+      let totalGrade = 0;
+      let gradedSubjectsCount = 0;
 
       const calculatedSubjects: CalculatedSubject[] = careerDef.map((subject) => {
         let status: CalculatedSubject['status'] = 'bloqueada';
 
-        if (userData.passedIds.includes(subject.id)) {
+        if (progressData.passedIds.includes(subject.id)) {
           status = 'aprobada';
-        } else if (userData.regularIds.includes(subject.id)) {
+          if (progressData.grades[subject.id]) {
+            totalGrade += Number(progressData.grades[subject.id]);
+            gradedSubjectsCount++;
+          }
+        } else if (progressData.regularIds.includes(subject.id)) {
           status = 'regular';
         } else {
-          // Motor de Correlativas: Verifica si cumple requisitos
+          // Lógica de correlativas
           const hasCursadas = subject.reqCursada.every((reqId: string) => 
-            userData.passedIds.includes(reqId) || userData.regularIds.includes(reqId)
+            progressData.passedIds.includes(reqId) || progressData.regularIds.includes(reqId)
           );
           const hasAprobadas = subject.reqAprobada.every((reqId: string) => 
-            userData.passedIds.includes(reqId)
+            progressData.passedIds.includes(reqId)
           );
 
-          if (hasCursadas && hasAprobadas) {
-            status = 'disponible';
-          }
+          if (hasCursadas && hasAprobadas) status = 'disponible';
         }
 
         return {
           ...subject,
           status,
-          grade: userData.grades[subject.id],
-          year: userData.years[subject.id]
+          grade: progressData.grades[subject.id],
+          year: progressData.years[subject.id]
         };
       });
 
-      // Calcular métricas reales para la barra de colores
-      const total = careerDef.length;
-      const aprobadas = userData.passedIds.length;
-      const regulares = userData.regularIds.length;
-
       const metrics: ProgressMetrics = {
-        total,
-        aprobadas,
-        regulares,
-        porcentajeAprobadas: (aprobadas / total) * 100,
-        porcentajeRegulares: (regulares / total) * 100,
+        total: careerDef.length,
+        aprobadas: progressData.passedIds.length,
+        regulares: progressData.regularIds.length,
+        porcentajeAprobadas: (progressData.passedIds.length / careerDef.length) * 100,
+        porcentajeRegulares: (progressData.regularIds.length / careerDef.length) * 100,
       };
 
+      const averageGrade = gradedSubjectsCount > 0 ? (totalGrade / gradedSubjectsCount).toFixed(2) : '0.00';
+
       return {
-        careerName: 'Ingeniería en Sistemas de Información',
-        averageGrade: 8.50, // Podrías calcularlo promediando el array grades
+        activeCareerId,
+        enrolledCareers: userData.enrolledCareers,
+        careerName: CAREER_NAMES[activeCareerId] || 'Carrera Desconocida',
+        averageGrade,
         totalProgress: Math.round(metrics.porcentajeAprobadas),
         metrics,
         subjects: calculatedSubjects
@@ -98,27 +133,47 @@ export const useProgress = () => {
     enabled: !!user,
   });
 
-  // Mutación para actualizar el estado
+  // Mutación para cambiar el estado de una materia
   const updateSubjectStatus = useMutation({
-    mutationFn: async ({ id, newStatus }: { id: string, newStatus: 'aprobada' | 'regular' | 'disponible' }) => {
+    mutationFn: async ({ id, newStatus, grade, year }: { id: string, newStatus: string, grade?: number, year?: number }) => {
       const userData = loadUserData();
-      
-      // Limpiamos la materia de ambas listas primero
-      userData.passedIds = userData.passedIds.filter((item: string) => item !== id);
-      userData.regularIds = userData.regularIds.filter((item: string) => item !== id);
+      const p = userData.progress[userData.activeCareer];
 
-      // La agregamos a la lista correspondiente
-      if (newStatus === 'aprobada') userData.passedIds.push(id);
-      if (newStatus === 'regular') userData.regularIds.push(id);
+      p.passedIds = p.passedIds.filter((item: string) => item !== id);
+      p.regularIds = p.regularIds.filter((item: string) => item !== id);
+
+      if (newStatus === 'aprobada') p.passedIds.push(id);
+      if (newStatus === 'regular') p.regularIds.push(id);
+
+      if (newStatus === 'disponible') {
+        delete p.grades[id];
+        delete p.years[id];
+      } else {
+        if (grade !== undefined) p.grades[id] = grade;
+        else delete p.grades[id]; // Si es regular, nos aseguramos de borrar la nota
+        if (year !== undefined) p.years[id] = year;
+      }
 
       localStorage.setItem(storageKey, JSON.stringify(userData));
       return true;
     },
-    onSuccess: () => {
-      // Recarga los datos instantáneamente
-      queryClient.invalidateQueries({ queryKey: ['progress', user?.uid] });
-    }
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', user?.uid] })
   });
 
-  return { ...query, updateSubjectStatus: updateSubjectStatus.mutate };
+  // Mutación para agregar/cambiar de carrera
+  const switchCareer = useMutation({
+    mutationFn: async (careerId: string) => {
+      const userData = loadUserData();
+      if (!userData.enrolledCareers.includes(careerId)) {
+        userData.enrolledCareers.push(careerId);
+        userData.progress[careerId] = { passedIds: [], regularIds: [], grades: {}, years: {} };
+      }
+      userData.activeCareer = careerId;
+      localStorage.setItem(storageKey, JSON.stringify(userData));
+      return true;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['progress', user?.uid] })
+  });
+
+  return { ...query, updateSubjectStatus: updateSubjectStatus.mutate, switchCareer: switchCareer.mutate };
 };

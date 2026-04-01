@@ -62,18 +62,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
           </nav>
 
           {/* PANEL ADMIN (Solo visible para admins) */}
-          {isAdmin && (
-            <div className="mt-4 pt-4 border-t border-itec-gray">
+          {isAuthenticated &&(
+            <div className="my-4 pt-4 border-t border-itec-gray">
               <SidebarItem 
-                path="/admin" 
-                icon={getIcon("settings")} 
-                label="Panel Admin" 
+                path="/progreso" 
+                icon={getIcon("bookmark")} 
+                label="Progreso" 
                 onClick={closeMobile} 
               />
             </div>
           )}
           {/* PERFIL DINÁMICO */}
           <div className="mt-auto pt-4 flex flex-col gap-1 border-t border-itec-gray">
+            {isAdmin && (
+              <SidebarItem 
+                path="/admin" 
+                icon={getIcon("settings")} 
+                label="Panel Admin" 
+                onClick={closeMobile} 
+              />
+            )}
             <SidebarItem 
               path="/perfil" 
               icon={
