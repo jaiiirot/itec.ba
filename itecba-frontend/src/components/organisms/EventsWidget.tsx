@@ -1,5 +1,5 @@
 import React from "react";
-import { EVENTS } from "../../data/dashboardData";
+import { EVENTS } from "../../features/home/types/dashboardData";
 import { Icons } from "../atoms/Icons";
 
 export const EventsWidget: React.FC = () => {

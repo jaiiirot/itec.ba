@@ -3,15 +3,15 @@ import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
 
 import { useAuth } from '../context/AuthContext';
-import { groupsService, type GroupData } from '../services/groupsService';
+import { groupsService, type GroupData } from '../features/groups/services/groupsService';
 
-import { GroupFilters } from '../components/organisms/GroupFilters';
-import { SpecialtyGrid } from '../components/organisms/SpecialtyGrid';
-import { GroupResults } from '../components/organisms/GroupResults';
+import { GroupFilters } from '../features/groups/components/organisms/GroupFilters';
+import { SpecialtyGrid } from '../features/groups/components/organisms/SpecialtyGrid';
+import { GroupResults } from '../features/groups/components/organisms/GroupResults';
 import { PageHeader } from '../components/molecules/PageHeader';
 
-const AddGroupModal = React.lazy(() => import('../components/organisms/AddGroupModal').then(m => ({ default: m.AddGroupModal })));
-const AdminPendingGroupsModal = React.lazy(() => import('../components/organisms/AdminPendingGroupsModal').then(m => ({ default: m.AdminPendingGroupsModal })));
+const AddGroupModal = React.lazy(() => import('../features/groups/components/organisms/AddGroupModal').then(m => ({ default: m.AddGroupModal })));
+const AdminPendingGroupsModal = React.lazy(() => import('../features/groups/components/organisms/AdminPendingGroupsModal').then(m => ({ default: m.AdminPendingGroupsModal })));
 
 export const GroupsPage: React.FC = () => {
   const { user, isAdmin } = useAuth();

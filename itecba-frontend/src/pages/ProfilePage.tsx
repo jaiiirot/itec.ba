@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { DashboardLayout } from "../components/templates/DashboardLayout";
 import { useAuth } from "../context/AuthContext";
 import { Icons } from "../components/atoms/Icons";
-import { TarjeTec } from "../components/organisms/TarjeTec";
+import { TarjeTec } from "../features/profile/components/organisms/TarjeTec";
 import { Input } from "../components/atoms/Input";
 import { Button } from "../components/atoms/Button";
 import { BENEFITS_DATA } from "../data/profileData";

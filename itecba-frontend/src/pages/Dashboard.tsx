@@ -1,13 +1,13 @@
 import React from "react";
-import { DashboardLayout } from "../components/templates/DashboardLayout";
-import { UniversalSearch } from "../components/organisms/UniversalSearch";
-import { HubNavigation } from "../components/organisms/HubNavigation";
 import { useAuth } from "../context/AuthContext";
+import { DashboardLayout } from "../components/templates/DashboardLayout";
+import { UniversalSearch } from "../features/home/components/organisms/UniversalSearch";
+import { HubNavigation } from "../features/home/components/organisms/HubNavigation";
 
 // Componentes modulares
-import { WelcomeWidget } from "../components/organisms/WelcomeWidget";
-import { UniversityLinksWidget } from "../components/organisms/UniversityLinksWidget";
-import { NewsWidget } from "../components/organisms/NewsWidget";
+import { WelcomeWidget } from "../features/home/components/organisms/WelcomeWidget";
+import { UniversityLinksWidget } from "../features/home/components/organisms/UniversityLinksWidget";
+import { NewsWidget } from "../features/home/components/organisms/NewsWidget";
 
 export const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();

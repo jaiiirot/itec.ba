@@ -3,16 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Icons } from '../components/atoms/Icons'; 
 
-import { CourseVideoPlayer } from '../components/organisms/CourseVideoPlayer';
-import { CoursePlaylist } from '../components/organisms/CoursePlaylist';
+import { CourseVideoPlayer } from '../features/courses/components/organisms/CourseVideoPlayer';
+import { CoursePlaylist } from '../features/courses/components/organisms/CoursePlaylist';
 
-import { coursesService } from "../features/courses/services/coursesService";
-import type { CourseData, Video } from '../features/courses/services/coursesService';
-import { resourcesService } from '../services/resourcesService';
-import type { ResourceData } from '../services/resourcesService';
+import { coursesService, type CourseData, type Video} from "../features/courses/services/coursesService";
+import { resourcesService, type ResourceData} from '../features/resources/services/resourcesService';
 
 // 🔴 MEJORA DE RENDIMIENTO: Lazy Loading para el modal de materiales
-const CourseMaterialModal = React.lazy(() => import('../components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
+const CourseMaterialModal = React.lazy(() => import('../features/courses/components/organisms/CourseMaterialModal').then(m => ({ default: m.CourseMaterialModal })));
 
 export const CourseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>(); 

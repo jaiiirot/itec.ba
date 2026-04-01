@@ -2,17 +2,16 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
 import { useAuth } from '../context/AuthContext';
-import { resourcesService } from '../services/resourcesService';
-import type { ResourceData } from '../services/resourcesService';
+import { resourcesService, type ResourceData } from '../features/resources/services/resourcesService';
 
 // Importamos nuestros nuevos componentes limpios
-import { ResourceFilters } from '../components/organisms/ResourceFilters';
-import { ResourcesTable } from '../components/organisms/ResourcesTable';
+import { ResourceFilters } from '../features/resources/components/organisms/ResourceFilters';
+import { ResourcesTable } from '../features/resources/components/organisms/ResourcesTable';
 import { PageHeader } from '../components/molecules/PageHeader';
 
 // 🔴 LAZY LOADING: Estos componentes pesados no se descargan hasta que se haga clic en los botones
-const AddResourceModal = React.lazy(() => import('../components/organisms/AddResourceModal').then(m => ({ default: m.AddResourceModal })));
-const AdminPendingResourcesModal = React.lazy(() => import('../components/organisms/AdminPendingResourcesModal').then(m => ({ default: m.AdminPendingResourcesModal })));
+const AddResourceModal = React.lazy(() => import('../features/resources/components/organisms/AddResourceModal').then(m => ({ default: m.AddResourceModal })));
+const AdminPendingResourcesModal = React.lazy(() => import('../features/resources/components/organisms/AdminPendingResourcesModal').then(m => ({ default: m.AdminPendingResourcesModal })));
 
 export const Explore: React.FC = () => {
   const { isAdmin } = useAuth();
