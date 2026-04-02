@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../molecules/ChatMessage';
-import { ChatInput } from '../molecules/ChatInput';
-import { FAQ_DATABASE, FALLBACK_ANSWER, ITEC_FOOTER } from '../../data/faqs';
+import { ChatMessage } from '../../../../components/molecules/ChatMessage';
+import { ChatInput } from '../../../../components/molecules/ChatInput';
+import { FAQ_DATABASE, FALLBACK_ANSWER, ITEC_FOOTER } from '../../types/faqs';
 
 interface Message {
   role: 'user' | 'model';

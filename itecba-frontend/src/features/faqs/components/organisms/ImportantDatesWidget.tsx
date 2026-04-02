@@ -1,6 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import { Icons } from '../atoms/Icons';
-import AdminButton from '../atoms/AdminButton';
+import { Icons } from '@/components/atoms/Icons';
 
 // 🔴 LAZY LOADING DEL MODAL
 const AddDateModal = React.lazy(() => import('./AddDateModal').then(m => ({ default: m.AddDateModal })));

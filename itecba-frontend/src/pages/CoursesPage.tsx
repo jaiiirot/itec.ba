@@ -18,7 +18,7 @@ const AddCourseModal = React.lazy(() =>
   import("@features/courses/components/organisms/AddCourseModal").then((m) => ({ default: m.AddCourseModal }))
 );
 
-export const Courses: React.FC = () => {
+export const CoursesPage: React.FC = () => {
   const { isAdmin } = useAuth();
 
   // 1. OBTENEMOS LOS DATOS Y MUTACIONES CON REACT QUERY
@@ -57,7 +57,7 @@ export const Courses: React.FC = () => {
     });
   }, [dbCourses]);
 
-  // 🟢 NUEVO: Función de borrado súper limpia
+  // Función de borrado súper limpia
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     if (!window.confirm("¿Seguro que deseas eliminar este curso de la base de datos?")) return;

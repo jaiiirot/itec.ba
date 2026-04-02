@@ -7,16 +7,16 @@ import { ResourceFilters } from '../features/resources/components/organisms/Reso
 import { ResourcesTable } from '../features/resources/components/organisms/ResourcesTable';
 import { PageHeader } from '../components/molecules/PageHeader';
 
-// 🟢 NUEVO: Importamos los hooks de caché
+// Importamos los hooks de caché
 import { useResources, usePendingResources } from '../features/resources/hooks/useResources';
 
 const AddResourceModal = React.lazy(() => import('../features/resources/components/organisms/AddResourceModal').then(m => ({ default: m.AddResourceModal })));
 const AdminPendingResourcesModal = React.lazy(() => import('../features/resources/components/organisms/AdminPendingResourcesModal').then(m => ({ default: m.AdminPendingResourcesModal })));
 
-export const Explore: React.FC = () => {
+export const ResourcesPage: React.FC = () => {
   const { isAdmin } = useAuth();
 
-  // 🟢 REEMPLAZO: Adiós useEffects. Hola caché.
+  //  Adiós useEffects. Hola caché.
   const { data: rawResources = [], isLoading } = useResources();
   const { data: pendingResources = [] } = usePendingResources(isAdmin);
   const pendingCount = pendingResources.length;
