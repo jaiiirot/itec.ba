@@ -1,10 +1,14 @@
 import { FAQ_DATABASE, FALLBACK_ANSWER } from '../types/faqs';
+import type { Message } from '../components/organisms/ChatInterface';
 
 const normalizeText = (text: string) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[¿?¡!.,]/g, "").trim();
 
+// Si usas variables de entorno en Vite, sería import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'; 
+
 export const chatbotService = {
   
-  // Búsqueda normal rápida en la Base de Datos Local
+  // 1. Búsqueda normal rápida en la Base de Datos Local
   searchFaqAnswer: (query: string): string => {
     const cleanQuery = normalizeText(query);
     const queryWords = cleanQuery.split(' ');
@@ -35,23 +39,47 @@ export const chatbotService = {
     return bestMatch ? bestMatch.answer : FALLBACK_ANSWER;
   },
 
-  // Consulta Avanzada a IA (Aquí conectarás tu backend en el futuro)
-  askAdvancedAI: async (query: string): Promise<string> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(
-          `✨ *(Respuesta generada por IA Avanzada)*\n\nHe analizado tu consulta sobre **"${query}"** cruzando datos de nuestra base de conocimientos y actualizaciones web.\n\nTe recomiendo verificar tu situación académica en SIGA y validar las fechas con el departamento correspondiente. Al ser un modelo de IA, esta información te sirve como guía de apoyo.\n\n¿Tienes alguna otra duda técnica que pueda responderte?`
-        );
-      }, 2500); // Simulamos 2.5s de procesamiento de red
-    });
+  // 🟢 2. Consulta REAL al backend con Gemini
+  askAdvancedAI: async (query: string, rawHistory: Message[]): Promise<string> => {
+    try {
+      // Gemini exige un formato específico para el historial: { role: 'user' | 'model', parts: [{ text: '...' }] }
+      // Ignoramos el primer mensaje porque es el saludo por defecto del frontend
+      const formattedHistory = rawHistory.slice(1).map(msg => ({
+        role: msg.role === 'model' ? 'model' : 'user', // Aseguramos los roles correctos
+        parts: [{ text: msg.text }]
+      }));
+
+      // Hacemos la petición a tu ruta backend (ajusta "/ais/chat" si tu index.js lo monta diferente)
+      const response = await fetch(`${API_URL}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: query,
+          history: formattedHistory
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error en el servidor: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.response; 
+
+    } catch (error) {
+      console.error("Error comunicándose con la IA:", error);
+      return "⚠️ Lo siento, los servidores de IA están congestionados en este momento. Por favor, intenta de nuevo más tarde.";
+    }
   },
 
-  // Control de Límite de 24hs (Guardado local por usuario)
+  // 3. Control de Límite de 24hs (Guardado local por usuario)
   canUseAI: (userEmail: string): boolean => {
     const lastUsed = localStorage.getItem(`itec_ai_last_${userEmail}`);
     if (!lastUsed) return true;
     const diff = Date.now() - parseInt(lastUsed, 10);
-    return diff > 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+    return diff > 24 * 60 * 60 * 1000; 
   },
 
   markAIUsed: (userEmail: string) => {

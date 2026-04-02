@@ -28,6 +28,7 @@ export const useChatbot = (userEmail: string) => {
     return () => clearInterval(interval);
   }, [userEmail]);
 
+// En useChatbot.ts...
   const handleSendMessage = async (text: string, forceAI: boolean = false) => {
     if (!text.trim()) return;
     
@@ -39,10 +40,12 @@ export const useChatbot = (userEmail: string) => {
       chatbotService.markAIUsed(userEmail);
       checkAILimits(); // Bloqueamos el botón inmediatamente
 
-      const aiResponse = await chatbotService.askAdvancedAI(text);
+      // 🟢 NUEVO: Le pasamos 'messages' (el historial actual) a la función
+      const aiResponse = await chatbotService.askAdvancedAI(text, messages);
+      
       setMessages(prev => [...prev, { role: 'model', text: aiResponse, timestamp: new Date(), isAiGenerated: true }]);
     } else {
-      // Chat normal
+      // Chat normal de base de datos
       setTimeout(() => {
         const isGreeting = ['hola', 'buenas', 'holis'].includes(text.toLowerCase().trim());
         const finalAnswer = chatbotService.searchFaqAnswer(text) + (isGreeting ? '' : '\n\n' + ITEC_FOOTER);
