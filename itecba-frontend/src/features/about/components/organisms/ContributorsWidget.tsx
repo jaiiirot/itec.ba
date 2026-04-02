@@ -1,97 +1,87 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Icons } from '@/components/atoms/Icons';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import type { User } from '@/context/AuthContext';
+import { useContributors } from '../../hooks/useContributors';
+import { useNavigate } from 'react-router-dom';
 
 export const ContributorsWidget: React.FC = () => {
-  // 🔴 1. CORRECCIÓN: El estado DEBE inicializarse con un array vacío []
-  const [team, setTeam] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTeam = async () => {
-      try {
-        const q = query(collection(db, 'users'), where('role', '==', 'admin'));
-        const snap = await getDocs(q);
-        const adminsData = snap.docs.map(doc => doc.data() as User);
-        
-        setTeam(adminsData || []); // Nos aseguramos de que nunca guarde "undefined"
-      } catch (error) {
-        console.error("Error cargando la comunidad:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTeam();
-  }, []);
+  const { team, isLoading } = useContributors();
+  const navigate = useNavigate();
 
   return (
-    <section className="animate-in fade-in slide-in-from-bottom-6 duration-700 mb-10">
-      <div className="bg-itec-surface border border-itec-gray rounded-3xl p-6 md:p-8 shadow-xl">
-        <h3 className="text-lg md:text-xl font-bold text-white mb-6 flex items-center justify-center md:justify-start gap-2">
-          <span className="text-red-500">❤️</span> Comunidad ITEC
-        </h3>
+    <section className="animate-in fade-in slide-in-from-bottom-6 duration-700 pb-10">
+      <div className="bg-itec-surface border border-itec-gray rounded-3xl p-8 md:p-10 shadow-2xl relative overflow-hidden">
         
-        <div className="flex flex-wrap items-center justify-center md:justify-start pl-2">
-          {isLoading ? (
-             <div className="w-8 h-8 border-2 border-itec-gray border-t-red-500 rounded-full animate-spin ml-4"></div>
-          ) : (
-            <>
-              {/* 🔴 2. BLINDAJE: Usamos team?.map (el signo de interrogación previene el crash si team no existe) */}
-              {team?.map((user, index) => {
+        <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-red-500/5 via-transparent to-transparent pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          
+          {/* Lado Izquierdo: Título y Equipo */}
+          <div className="flex-1 w-full text-center md:text-left">
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
+              Conocé al <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400">Equipo ITEC</span>
+            </h3>
+            <p className="text-sm text-gray-400 mb-6 max-w-md mx-auto md:mx-0 leading-relaxed">
+              Somos un grupo de estudiantes comprometidos con mantener esta plataforma viva, organizada y actualizada todos los días para vos.
+            </p>
+            
+            <div className="flex flex-wrap items-center justify-center md:justify-start">
+              {isLoading ? (
+                 <div className="w-8 h-8 border-2 border-itec-gray border-t-red-500 rounded-full animate-spin"></div>
+              ) : (
+                <div className="flex -space-x-4 hover:space-x-2 transition-all duration-300">
+                  {team?.map((user, index) => {
+                    const displayName = user?.name || 'Miembro';
+                    const initial = displayName.charAt(0).toUpperCase();
+                    const firstName = displayName.split(' ')[0];
+
+                    return (
+                      <div key={index} className="group relative transition-transform hover:scale-110 hover:-translate-y-2 hover:z-20 cursor-default">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-[3px] border-itec-surface bg-itec-sidebar overflow-hidden shadow-lg flex items-center justify-center text-xl font-bold text-gray-500 ring-2 ring-transparent group-hover:ring-red-500/50 transition-all">
+                          {user?.photoURL ? (
+                            <img src={user.photoURL} alt={displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            initial
+                          )}
+                        </div>
+                        
+                        {/* Tooltip del Miembro */}
+                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-itec-bg border border-itec-gray text-white text-[10px] px-3 py-2 rounded-xl whitespace-nowrap z-30 shadow-2xl pointer-events-none flex flex-col items-center">
+                          <span className="font-bold text-xs">{firstName}</span>
+                          <span className="text-red-400 font-medium">Equipo ITEC</span>
+                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-itec-bg border-r border-b border-itec-gray rotate-45"></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Lado Derecho: Banner de Colaboración Estudiantil */}
+          <div className="w-full md:w-auto shrink-0">
+            <div className="bg-gradient-to-br from-gray-800 to-black p-[1px] rounded-3xl shadow-2xl">
+              <div className="bg-itec-bg rounded-3xl p-6 md:p-8 flex flex-col items-center text-center h-full border border-white/5 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
                 
-                // 🔴 3. BLINDAJE EXTRA: Si un admin en Firebase no tiene nombre, no queremos que el ".split()" rompa la página.
-                const displayName = user?.name || 'Admin';
-                const initial = displayName.charAt(0).toUpperCase();
-                const firstName = displayName.split(' ')[0];
+                <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-4 border border-red-500/20">
+                  <Icons type="file" ></Icons>
+                </div>
+                
+                <h4 className="text-white font-bold mb-2">Sé parte del proyecto</h4>
+                <p className="text-xs text-gray-400 max-w-[200px] mb-6 leading-relaxed">
+                  Ayudanos a crecer subiendo tus apuntes o sumando tu grupo de WhatsApp a la comunidad.
+                </p>
+                <button 
+                  onClick={() => navigate('/recursos')} 
+                  className="w-full py-3 px-6 bg-white text-black hover:bg-gray-200 hover:scale-[1.02] rounded-xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 flex items-center justify-center gap-2"
+                >
+                  Compartir un Apunte
+                </button>
+              </div>
+            </div>
+          </div>
 
-                return (
-                  <div 
-                    key={index}
-                    className="group relative -ml-3 transition-transform hover:scale-110 hover:z-20 cursor-default"
-                  >
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-itec-surface bg-itec-sidebar overflow-hidden shadow-md flex items-center justify-center text-xl font-bold text-gray-500">
-                      {user?.photoURL ? (
-                        <img src={user.photoURL} alt={displayName} className="w-full h-full object-cover" />
-                      ) : (
-                        initial
-                      )}
-                    </div>
-                    
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-itec-bg border border-itec-gray text-white text-[10px] px-3 py-1.5 rounded-lg whitespace-nowrap z-30 shadow-xl pointer-events-none">
-                      <span className="font-bold block text-center text-xs">{firstName}</span>
-                      <span className="text-red-400">Equipo ITEC</span>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* EL BOTÓN "+" */}
-              <a 
-                href="https://github.com/jaiiirot/itec.ba" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="group relative -ml-3 transition-transform hover:scale-110 hover:z-20"
-              >
-                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-itec-surface bg-itec-bg border-dashed hover:border-solid hover:border-red-500 flex flex-col items-center justify-center text-gray-500 hover:text-red-400 transition-colors shadow-md z-10">
-                    <Icons type="plus" className="w-5 h-5 mb-0.5" />
-                 </div>
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-itec-bg border border-itec-gray text-white text-[10px] px-3 py-1.5 rounded-lg whitespace-nowrap z-30 shadow-xl pointer-events-none font-bold">
-                    Sumate
-                  </div>
-              </a>
-            </>
-          )}
-        </div>
-        
-        <div className="mt-8 pt-6 border-t border-itec-gray/50 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-400 text-center md:text-left">
-            El código de ITEC es <strong className="text-white">100% open-source</strong>. Sumá código, reportá bugs o danos una estrella en GitHub.
-          </p>
-          <a href="https://github.com/jaiiirot/itec.ba" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 bg-white text-black hover:bg-gray-200 rounded-full text-sm font-bold transition-all shadow-lg shrink-0">
-            <Icons type="github" className="w-5 h-5" /> Ver Repositorio
-          </a>
         </div>
       </div>
     </section>
