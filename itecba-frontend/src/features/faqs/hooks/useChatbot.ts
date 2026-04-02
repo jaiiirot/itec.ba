@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { chatbotService } from '../services/chatbotService';
 import { ITEC_FOOTER } from '../types/faqs';
-import type { Message } from '../components/organisms/ChatInterface'; // Exportamos el type desde ahí o desde types
+import type { Message } from '../components/organisms/ChatInterface'; 
 
 const WELCOME_MESSAGE: Message = { 
   role: 'model', 
@@ -15,7 +15,6 @@ export const useChatbot = (userEmail: string) => {
   const [canUseAI, setCanUseAI] = useState(true);
   const [timeLeftAI, setTimeLeftAI] = useState<string | null>(null);
 
-  // Comprobar disponibilidad de IA al cargar y al enviar mensajes
   const checkAILimits = () => {
     setCanUseAI(chatbotService.canUseAI(userEmail));
     setTimeLeftAI(chatbotService.getTimeLeftToUseAI(userEmail));
@@ -23,33 +22,45 @@ export const useChatbot = (userEmail: string) => {
 
   useEffect(() => {
     checkAILimits();
-    // Actualizamos el temporizador cada minuto para que la UI se refresque sola
     const interval = setInterval(checkAILimits, 60000); 
     return () => clearInterval(interval);
   }, [userEmail]);
 
-// En useChatbot.ts...
   const handleSendMessage = async (text: string, forceAI: boolean = false) => {
     if (!text.trim()) return;
+
+    if (text.toLowerCase().trim() === "reset ai") {
+      localStorage.removeItem(`itec_ai_last_${userEmail}`);
+      checkAILimits();
+      setMessages(prev => [...prev, { role: 'model', text: "✅ Truco dev activado: Has reseteado tu límite de IA.", timestamp: new Date() }]);
+      return;
+    }
     
-    // Agregamos mensaje del usuario
     setMessages(prev => [...prev, { role: 'user', text, timestamp: new Date() }]);
     setIsTyping(true);
 
     if (forceAI && canUseAI) {
-      chatbotService.markAIUsed(userEmail);
-      checkAILimits(); // Bloqueamos el botón inmediatamente
-
-      // 🟢 NUEVO: Le pasamos 'messages' (el historial actual) a la función
       const aiResponse = await chatbotService.askAdvancedAI(text, messages);
-      
       setMessages(prev => [...prev, { role: 'model', text: aiResponse, timestamp: new Date(), isAiGenerated: true }]);
+      
+      if (!aiResponse.includes("⚠️")) {
+        chatbotService.markAIUsed(userEmail);
+        checkAILimits(); 
+      }
     } else {
-      // Chat normal de base de datos
       setTimeout(() => {
         const isGreeting = ['hola', 'buenas', 'holis'].includes(text.toLowerCase().trim());
-        const finalAnswer = chatbotService.searchFaqAnswer(text) + (isGreeting ? '' : '\n\n' + ITEC_FOOTER);
-        setMessages(prev => [...prev, { role: 'model', text: finalAnswer, timestamp: new Date() }]);
+        
+        // 🟢 RECIBIMOS TEXTO Y SUGERENCIAS DEL SERVICIO
+        const responseData = chatbotService.searchFaqAnswer(text);
+        const finalAnswer = responseData.text + (isGreeting ? '' : '\n\n' + ITEC_FOOTER);
+        
+        setMessages(prev => [...prev, { 
+          role: 'model', 
+          text: finalAnswer, 
+          timestamp: new Date(),
+          suggestions: responseData.suggestions // Guardamos los botones
+        }]);
       }, Math.floor(Math.random() * 500) + 500);
     }
     
@@ -62,12 +73,5 @@ export const useChatbot = (userEmail: string) => {
     }
   };
 
-  return {
-    messages,
-    isTyping,
-    canUseAI,
-    timeLeftAI,
-    handleSendMessage,
-    clearChat
-  };
+  return { messages, isTyping, canUseAI, timeLeftAI, handleSendMessage, clearChat };
 };

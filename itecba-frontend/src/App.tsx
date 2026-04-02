@@ -7,9 +7,9 @@ import { CourseDetail } from "./pages/CourseDetail";
 import { ResourcesPage } from "./pages/ResourcesPage"; 
 import { FaqsPage } from "./pages/FaqsPage";
 import { GroupsPage } from "./pages/GroupsPage"; 
-import { IngresoPage } from "./pages/IngresoPage";
-import { GradoPage } from "./pages/GradoPage";
-import { NosotrosPage } from "./pages/NosotrosPage";
+import { AdmissionPage } from "./pages/AdmissionPage";
+import { GradePage } from "./pages/GradePage";
+import { AboutPage } from "./pages/AboutPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ErrorPage } from "./pages/ErrorPage";
 import { AdminPanel } from './pages/AdminPanel';
@@ -26,9 +26,9 @@ const router = createBrowserRouter([
       { path: "recursos", element: <ResourcesPage /> },
       { path: "chat", element: <FaqsPage /> },
       { path: "grupos", element: <GroupsPage /> },
-      { path: "ingreso", element: <IngresoPage /> },
-      { path: "grado", element: <GradoPage /> },
-      { path: "nosotros", element: <NosotrosPage /> },
+      { path: "ingreso", element: <AdmissionPage /> },
+      { path: "grado", element: <GradePage /> },
+      { path: "nosotros", element: <AboutPage /> },
       
       // RUTAS DEL PERFIL
       { path: "admin", element: <AdminPanel /> },

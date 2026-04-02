@@ -42,8 +42,9 @@ export const ImportantDatesWidget: React.FC<Props> = ({ isAdmin }) => {
           Calendario
         </h2>
         {isAdmin && (
-           <button onClick={() => setIsModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-400 hover:text-white hover:border-orange-500 transition-colors" title="Agregar Fecha">
+           <button onClick={() => setIsModalOpen(true)} className="py-1 px-2 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-400 hover:text-white hover:border-orange-500 transition-colors cursor-pointer" title="Agregar Fecha">
              <Icons type="plus" className="w-4 h-4" />
+             <span className='text-sm'>Agregar Fechas</span>
            </button>
         )}
       </div>

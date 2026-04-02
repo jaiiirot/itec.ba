@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icons } from '../atoms/Icons';
+import { Icons } from '@/components/atoms/Icons';
 
 interface SocialLink {
   id: string;

@@ -1,15 +1,12 @@
 import React from "react";
-import { DashboardLayout } from "../components/templates/DashboardLayout";
-import { Icons } from "../components/atoms/Icons";
-
-// Importamos la data y los organismos modulares
-import { INGRESO_DATA } from "../data/ingresoLinks";
-import { IngresoHighlightActions } from "../components/organisms/IngresoHighlightActions";
-import { IngresoSocialGrid } from "../components/organisms/IngresoSocialGrid";
-import { IngresoAcademicGrid } from "../components/organisms/IngresoAcademicGrid";
+import { DashboardLayout } from "@/components/templates/DashboardLayout";
 import { PageHeader } from "@/components/molecules/PageHeader";
+import { INGRESO_DATA } from "@/features/admission/types/ingresoLinks";
+import { IngresoHighlightActions } from "@/features/admission/components/organisms/IngresoHighlightActions";
+import { IngresoSocialGrid } from "@/features/admission/components/organisms/IngresoSocialGrid";
+import { IngresoAcademicGrid } from "@/features/admission/components/organisms/IngresoAcademicGrid";
 
-export const IngresoPage: React.FC = () => {
+export const AdmissionPage: React.FC = () => {
   return (
     <DashboardLayout>
       <PageHeader

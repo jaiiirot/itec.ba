@@ -1,9 +1,9 @@
 import React, { useState, Suspense } from "react";
-import { DashboardLayout } from "../components/templates/DashboardLayout";
-import { CareerGrid } from "../components/organisms/CareerGrid";
 import { Icons } from "../components/atoms/Icons";
-import { PLANES_DB } from "../data/correlativas";
+import { DashboardLayout } from "../components/templates/DashboardLayout";
 import { PageHeader } from "../components/molecules/PageHeader";
+import { CareerGrid } from "@/features/grade/components/organisms/CareerGrid";
+import { PLANES_DB } from "@/features/grade/types/correlativas";
 
 // 🔴 MEJORA PREMIUM: Lazy Loading del Mapa Interactivo
 // Esto evita que las librerías gráficas pesadas se descarguen si el usuario no hace clic en una carrera.
@@ -13,7 +13,7 @@ const CareerGraph = React.lazy(() =>
   })),
 );
 
-export const GradoPage: React.FC = () => {
+export const GradePage: React.FC = () => {
   const [selectedCareer, setSelectedCareer] = useState<string | null>(null);
 
   // Determinar la clase del contenedor dinámicamente

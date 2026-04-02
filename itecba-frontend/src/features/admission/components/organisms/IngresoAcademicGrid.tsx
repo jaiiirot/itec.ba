@@ -1,5 +1,5 @@
 import React from 'react';
-import { Icons } from '../atoms/Icons';
+import { Icons } from '@/components/atoms/Icons';
 
 interface Material { id: string; url: string; emoji: string; title: string; subtitle: string; }
 interface SiuLink { id: string; url: string; title: string; subtitle: string; }

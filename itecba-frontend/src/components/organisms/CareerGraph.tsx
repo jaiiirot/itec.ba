@@ -1,8 +1,8 @@
 import React from 'react';
 import { ReactFlow, Background, Controls, Handle, Position, useNodesState, useEdgesState, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { PlanDeEstudio } from '../../data/correlativas';
-import { CATEGORY_STYLES } from '../../data/correlativas';
+import type { PlanDeEstudio } from '../../features/grade/types/correlativas';
+import { CATEGORY_STYLES } from '../../features/grade/types/correlativas';
 
 interface MateriaNodeData {
   title: string;

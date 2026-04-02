@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Icons } from '../atoms/Icons';
-import { db } from '../../lib/firebase';
+import { Icons } from '@/components/atoms/Icons';
+import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import type { User } from '../../context/AuthContext';
+import type { User } from '@/context/AuthContext';
 
 export const ContributorsWidget: React.FC = () => {
   // 🔴 1. CORRECCIÓN: El estado DEBE inicializarse con un array vacío []

@@ -1,6 +1,6 @@
 import React from 'react';
 import { CareerCard, type CareerOption } from '../molecules/CareerCard';
-import { PLANES_DB } from '../../data/correlativas';
+import { PLANES_DB } from '../../types/correlativas';
 
 const CAREER_CARDS: CareerOption[] = [
   { id: 'sistemas', name: 'Sistemas de Información', icon: '💻', color: 'text-blue-400', border: 'hover:border-blue-500', shadow: 'hover:shadow-blue-500/20' },

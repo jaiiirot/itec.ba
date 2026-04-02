@@ -1,29 +1,31 @@
 import React from 'react';
-import { DashboardLayout } from '../components/templates/DashboardLayout';
-import { usePageTitle } from '../hooks/usePageTitle';
-import { Icons } from '../components/atoms/Icons';
+import { DashboardLayout } from '@/components/templates/DashboardLayout';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { Icons } from '@/components/atoms/Icons';
 
 import { PageHeader } from '../components/molecules/PageHeader';
 import logoItec from '../assets/logo.png'; 
 
-import { AboutProjectWidget } from '../components/organisms/AboutProjectWidget';
-import { ContributorsWidget } from '../components/organisms/ContributorsWidget'; // 🔴 Nuestro nuevo componente
+import { AboutProjectWidget } from '@/features/about/components/organisms/AboutProjectWidget';
+import { ContributorsWidget } from '@/features/about/components/organisms/ContributorsWidget'; 
 
-export const NosotrosPage: React.FC = () => {
+export const AboutPage: React.FC = () => {
   usePageTitle('Sobre Nosotros');
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto pb-16 relative z-10">
-        
+
         {/* El Header ahora ajusta el logo automáticamente */}
+        <div className='max-w-4xl'>
+
         <PageHeader 
           title="Sobre ITEC"
           description="Conoce más sobre el proyecto open-source, nuestra visión y quiénes están detrás del desarrollo de la plataforma."
           imageUrl={logoItec} 
           colorTheme=""
-        />
+          />
 
+          </div>
         {/* Organismo 1: Misión y Visión */}
         <AboutProjectWidget />
 
@@ -43,7 +45,6 @@ export const NosotrosPage: React.FC = () => {
           </a>
         </div>
 
-      </div>
     </DashboardLayout>
   );
 };
