@@ -1,7 +1,6 @@
 import React, { useState, Suspense } from 'react';
 import { Icons } from '@/components/atoms/Icons';
 
-// 🔴 LAZY LOADING DEL MODAL
 const AddDateModal = React.lazy(() => import('./AddDateModal').then(m => ({ default: m.AddDateModal })));
 
 export interface ImportantDate {
@@ -16,57 +15,53 @@ interface Props {
 }
 
 export const ImportantDatesWidget: React.FC<Props> = ({ isAdmin }) => {
-  // TODO: Conectar esto a tu servicio de Base de Datos (ej: datesService.getDates())
   const [dates, setDates] = useState<ImportantDate[]>([
     { id: '1', title: 'Inscripción a Cursada', date: '15 al 20 de Marzo', description: 'A través del sistema SIGA.' },
-    { id: '2', title: 'Inicio 1er Cuatrimestre', date: '25 de Marzo', description: 'Comienzo oficial de clases para todas las carreras.' }
+    { id: '2', title: 'Inicio 1er Cuatrimestre', date: '25 de Marzo', description: 'Comienzo oficial de clases.' },
+    { id: '3', title: 'Exámenes Finales', date: '10 de Julio', description: 'Turno de julio. Anotarse 48hs antes.' }
   ]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <section className="mt-12 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between mb-6 border-b border-itec-gray pb-3">
-        <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
-          <span className="text-orange-500">📅</span> Calendario Académico
+    <section className="bg-itec-surface border border-itec-gray rounded-3xl p-6 shadow-2xl h-full animate-in fade-in duration-500">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center text-sm">📅</span> 
+          Calendario
         </h2>
         {isAdmin && (
            <button 
              onClick={() => setIsModalOpen(true)}
-             className="text-xs bg-itec-surface border border-itec-gray hover:bg-itec-gray text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+             className="w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-400 hover:text-white hover:border-orange-500 transition-colors"
+             title="Agregar Fecha"
              >
-               <Icons type="plus" className="w-3 h-3" /> Agregar Fecha
+               <Icons type="plus" className="w-4 h-4" />
            </button>
         )}
       </div>
 
       {dates.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {dates.map((item) => (
-            <div key={item.id} className="bg-itec-surface border border-itec-gray rounded-xl p-4 shadow-lg flex gap-4 items-start group hover:border-orange-500/50 transition-colors">
+        // 🟢 NUEVO: Diseño de Línea de Tiempo (Timeline)
+        <div className="relative border-l border-itec-gray/50 ml-3 space-y-8 pb-4">
+          {dates.map((item, index) => (
+            <div key={item.id} className="relative pl-6 group">
+              {/* Punto de la línea de tiempo */}
+              <span className={`absolute -left-[5.5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-itec-surface transition-colors ${index === 0 ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]' : 'bg-gray-500 group-hover:bg-orange-400'}`}></span>
               
-              {/* Icono de Calendario visual */}
-              <div className="flex flex-col items-center justify-center w-12 shrink-0 bg-itec-bg border border-itec-gray rounded-lg overflow-hidden text-center shadow-sm">
-                <div className="bg-orange-600 text-white text-[9px] font-bold uppercase tracking-widest w-full py-0.5">FCA</div>
-                <div className="py-1 text-gray-300">
-                  <Icons type="clock" className="w-5 h-5 mx-auto opacity-70" />
-                </div>
-              </div>
-
               <div>
-                <h3 className="text-sm font-bold text-white mb-1 leading-snug">{item.title}</h3>
-                <p className="text-xs text-orange-400 font-medium mb-1.5">{item.date}</p>
-                <p className="text-[11px] text-gray-400 leading-relaxed">{item.description}</p>
+                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-1">{item.date}</p>
+                <h3 className="text-sm font-bold text-white mb-1.5 leading-snug">{item.title}</h3>
+                <p className="text-[12px] text-gray-400 leading-relaxed bg-itec-bg/50 p-2.5 rounded-lg border border-itec-gray/30">{item.description}</p>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-center py-10 bg-itec-surface border border-itec-gray border-dashed rounded-xl">
-          <p className="text-gray-500 text-sm">No hay fechas importantes próximas.</p>
+        <div className="text-center py-10 bg-itec-bg border border-itec-gray border-dashed rounded-xl">
+          <p className="text-gray-500 text-sm">No hay fechas próximas.</p>
         </div>
       )}
 
-      {/* Renderizado Perezoso del Modal */}
       {isAdmin && isModalOpen && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
           <AddDateModal 
