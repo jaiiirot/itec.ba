@@ -1,6 +1,6 @@
 // src/pages/Courses.tsx
 import React, { useState, Suspense, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query"; // Importamos el manejador de caché
+// Ya no necesitamos importar useQueryClient aquí directamente
 
 // Importaciones con Alias Global
 import { DashboardLayout } from "@/components/templates/DashboardLayout";
@@ -9,8 +9,7 @@ import { PageHeader } from "@/components/molecules/PageHeader";
 import { useAuth } from "@/context/AuthContext";
 
 // Importaciones con Alias de Features
-import { coursesService } from "@features/courses/services/coursesService";
-import { useCourses } from "@features/courses/hooks/useCourses"; // <-- Tu nuevo Hook de React Query
+import { useCourses, useDeleteCourse } from "@features/courses/hooks/useCourses"; 
 import { CourseGrid, type CourseWithLocalProgress } from "@features/courses/components/organisms/CourseGrid";
 import { CourseFilters } from "@features/courses/components/molecules/CourseFilters";
 
@@ -21,18 +20,17 @@ const AddCourseModal = React.lazy(() =>
 
 export const Courses: React.FC = () => {
   const { isAdmin } = useAuth();
-  const queryClient = useQueryClient(); // Nos permite manipular los datos guardados en caché
 
-  // 1. OBTENEMOS LOS DATOS DE LA CACHÉ/API CON REACT QUERY
-  // Extraemos "data" (le damos el alias dbCourses por defecto a un array vacío) y "isLoading"
+  // 1. OBTENEMOS LOS DATOS Y MUTACIONES CON REACT QUERY
   const { data: dbCourses = [], isLoading } = useCourses();
+  const deleteCourseMutation = useDeleteCourse(); // 🟢 NUEVO: Traemos nuestra mutación para borrar
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Estados de los filtros
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMateria, setSelectedMateria] = useState("");
-  const [selectedCategoria, setSelectedCategoria] = useState(""); // '' | 'Oficial' | 'Comunidad'
+  const [selectedCategoria, setSelectedCategoria] = useState(""); 
 
   const calculateLocalProgress = (courseId: string, totalVideos: number): number => {
     if (totalVideos === 0) return 0;
@@ -49,8 +47,6 @@ export const Courses: React.FC = () => {
     return 0;
   };
 
-  // 2. COMBINAMOS LOS DATOS CACHEADOS CON EL PROGRESO LOCAL DE LA PC DEL USUARIO
-  // Usamos useMemo para que no calcule esto en cada render, solo si cambia la DB (React Query)
   const coursesWithProgress: CourseWithLocalProgress[] = useMemo(() => {
     return dbCourses.map((course: any) => {
       const courseId = course.id || course._id;
@@ -61,33 +57,25 @@ export const Courses: React.FC = () => {
     });
   }, [dbCourses]);
 
+  // 🟢 NUEVO: Función de borrado súper limpia
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     if (!window.confirm("¿Seguro que deseas eliminar este curso de la base de datos?")) return;
 
-    try {
-      await coursesService.deleteCourse(id);
-      localStorage.removeItem(`itec_course_${id}`);
-      
-      // 3. ACTUALIZAMOS LA CACHÉ INSTANTÁNEAMENTE (Optimistic Update)
-      // Removemos el curso de la memoria en lugar de hacer otro fetch
-      queryClient.setQueryData(['courses'], (oldData: any) => {
-        if (!oldData) return [];
-        return oldData.filter((c: any) => (c.id || c._id) !== id);
-      });
-      
-    } catch {
-      alert("Error al eliminar el curso.");
-    }
+    // Borramos su historial local
+    localStorage.removeItem(`itec_course_${id}`);
+    
+    // Disparamos la mutación (React Query hará la petición y refrescará la tabla solo)
+    deleteCourseMutation.mutate(id, {
+      onError: () => alert("Error al eliminar el curso.")
+    });
   };
 
-  // Extraer dinámicamente las materias que existen en los cursos cargados
   const materiasDisponibles = useMemo(() => {
     const materias = coursesWithProgress.map(c => c.materia).filter(Boolean) as string[];
     return Array.from(new Set(materias)).sort();
   }, [coursesWithProgress]);
 
-  // Lógica de filtrado en tiempo real
   const filteredCourses = useMemo(() => {
     return coursesWithProgress.filter((curso) => {
       const cursoId = curso.id || (curso as any)._id || "";
@@ -140,7 +128,7 @@ export const Courses: React.FC = () => {
 
         <CourseGrid
           courses={filteredCourses}
-          isLoading={isLoading} // React Query te maneja este estado automáticamente
+          isLoading={isLoading} 
           isAdmin={isAdmin}
           onDelete={handleDelete}
         />
@@ -151,12 +139,6 @@ export const Courses: React.FC = () => {
           <AddCourseModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
-            onCourseAdded={(newCourse) => {
-              // 4. INVALIDAMOS LA CACHÉ CUANDO SE CREA UN CURSO
-              // Esto le avisa a React Query que los datos quedaron "viejos" 
-              // y automáticamente irá al backend a buscar el nuevo curso sin que hagas nada.
-              queryClient.invalidateQueries({ queryKey: ['courses'] });
-            }}
           />
         </Suspense>
       )}

@@ -1,50 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { groupsService, type GroupData } from '../../services/groupsService';
+import React from 'react';
+import { type GroupData } from '../../services/groupsService';
+// IMPORTAMOS LOS HOOKS (La misma caché que usa la página principal)
+import { usePendingGroups, useApprovePendingGroup, useRejectPendingGroup } from '../../hooks/useGroups';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onGroupApproved: (group: GroupData) => void;
 }
 
-export const AdminPendingGroupsModal: React.FC<Props> = ({ isOpen, onClose, onGroupApproved }) => {
-  const [pendingGroups, setPendingGroups] = useState<GroupData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const AdminPendingGroupsModal: React.FC<Props> = ({ isOpen, onClose }) => {
+  // 🟢 Usamos la data ya en caché! (isAdmin = true porque si abres esto, eres admin)
+  const { data: pendingGroups = [], isLoading } = usePendingGroups(true);
+  
+  const approveMutation = useApprovePendingGroup();
+  const rejectMutation = useRejectPendingGroup();
 
-  useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      groupsService.getPendingGroups()
-        .then(setPendingGroups)
-        .catch(() => alert("Error cargando solicitudes"))
-        .finally(() => setIsLoading(false));
-    }
-  }, [isOpen]);
-
-  const handleApprove = async (group: GroupData) => {
-    try {
-      const newId = await groupsService.approvePendingGroup(group);
-      setPendingGroups(prev => prev.filter(g => g.id !== group.id));
-      onGroupApproved({ ...group, id: newId });
-      alert(`✅ Grupo ${group.comision} publicado.`);
-    } catch {
-      alert("Error al aprobar.");
-    }
+  const handleApprove = (group: GroupData) => {
+    approveMutation.mutate(group, {
+      onSuccess: () => alert(`✅ Grupo ${group.comision} publicado.`),
+      onError: () => alert("Error al aprobar.")
+    });
   };
 
-  const handleReject = async (groupId: string) => {
+  const handleReject = (groupId: string) => {
     if (!window.confirm("¿Seguro que deseas eliminar esta solicitud?")) return;
-    try {
-      await groupsService.rejectPendingGroup(groupId);
-      setPendingGroups(prev => prev.filter(g => g.id !== groupId));
-    } catch {
-      alert("Error al rechazar.");
-    }
+    rejectMutation.mutate(groupId, {
+      onError: () => alert("Error al rechazar.")
+    });
   };
 
   if (!isOpen) return null;
 
   return (
+    // ... Tu mismo return de HTML ... (Cambiando variables locales por las de las mutaciones)
     <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-2xl w-full max-w-5xl shadow-2xl p-6 relative flex flex-col max-h-[85vh]">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white z-10">✖</button>
@@ -76,8 +64,8 @@ export const AdminPendingGroupsModal: React.FC<Props> = ({ isOpen, onClose, onGr
                     <td className="p-3"><a href={group.link} target="_blank" rel="noreferrer" className="text-itec-blue-skye hover:text-white underline text-xs inline-block max-w-[150px] truncate">{group.link}</a></td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => handleReject(group.id)} className="px-3 py-1.5 text-xs font-bold bg-itec-red/10 text-itec-red-skye hover:bg-itec-red hover:text-white rounded-lg">Rechazar</button>
-                        <button onClick={() => handleApprove(group)} className="px-3 py-1.5 text-xs font-bold bg-itec-blue text-white hover:bg-itec-blue-skye rounded-lg">Aprobar</button>
+                        <button onClick={() => handleReject(group.id as string)} disabled={rejectMutation.isPending} className="px-3 py-1.5 text-xs font-bold bg-itec-red/10 text-itec-red-skye hover:bg-itec-red hover:text-white rounded-lg disabled:opacity-50">Rechazar</button>
+                        <button onClick={() => handleApprove(group)} disabled={approveMutation.isPending} className="px-3 py-1.5 text-xs font-bold bg-itec-blue text-white hover:bg-itec-blue-skye rounded-lg disabled:opacity-50">Aprobar</button>
                       </div>
                     </td>
                   </tr>

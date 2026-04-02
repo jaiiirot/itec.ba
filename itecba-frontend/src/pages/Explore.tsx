@@ -1,24 +1,25 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Button } from '../components/atoms/Button';
 import { useAuth } from '../context/AuthContext';
-import { resourcesService, type ResourceData } from '../features/resources/services/resourcesService';
 
-// Importamos nuestros nuevos componentes limpios
 import { ResourceFilters } from '../features/resources/components/organisms/ResourceFilters';
 import { ResourcesTable } from '../features/resources/components/organisms/ResourcesTable';
 import { PageHeader } from '../components/molecules/PageHeader';
 
-// 🔴 LAZY LOADING: Estos componentes pesados no se descargan hasta que se haga clic en los botones
+// 🟢 NUEVO: Importamos los hooks de caché
+import { useResources, usePendingResources } from '../features/resources/hooks/useResources';
+
 const AddResourceModal = React.lazy(() => import('../features/resources/components/organisms/AddResourceModal').then(m => ({ default: m.AddResourceModal })));
 const AdminPendingResourcesModal = React.lazy(() => import('../features/resources/components/organisms/AdminPendingResourcesModal').then(m => ({ default: m.AdminPendingResourcesModal })));
 
 export const Explore: React.FC = () => {
   const { isAdmin } = useAuth();
 
-  const [allResources, setAllResources] = useState<ResourceData[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  // 🟢 REEMPLAZO: Adiós useEffects. Hola caché.
+  const { data: rawResources = [], isLoading } = useResources();
+  const { data: pendingResources = [] } = usePendingResources(isAdmin);
+  const pendingCount = pendingResources.length;
 
   // Estados de Filtros
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,45 +31,32 @@ export const Explore: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  useEffect(() => {
-    setIsLoading(true);
-    resourcesService.getApprovedResources()
-      .then(res => {
-        const sorted = res.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        setAllResources(sorted);
-      })
-      .catch(err => console.error("Error al traer recursos:", err))
-      .finally(() => setIsLoading(false));
-
-    if (isAdmin) {
-      resourcesService.getPendingResources().then(res => setPendingCount(res.length));
-    }
-  }, [isAdmin]);
-
   const handleClearFilters = () => {
     setSearchQuery(''); setCarrera(''); setNivel(''); setMateria('');
   };
 
-  // Filtrado en tiempo real
+  // Ordenamos los recursos recientes primero y luego filtramos
   const filteredResources = useMemo(() => {
-    return allResources.filter(r => {
+    // 1. Ordenar (Lo que antes hacías en el .then del fetch)
+    const sorted = [...rawResources].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    
+    // 2. Filtrar
+    return sorted.filter(r => {
       const matchText = searchQuery === '' || r.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchCarrera = carrera === '' || r.carrera === carrera;
       const matchNivel = nivel === '' || r.nivel === nivel;
       const matchMateria = materia === '' || r.materia.toLowerCase().includes(materia.toLowerCase());
       return matchText && matchCarrera && matchNivel && matchMateria;
     });
-  }, [allResources, searchQuery, carrera, nivel, materia]);
+  }, [rawResources, searchQuery, carrera, nivel, materia]);
 
   return (
     <DashboardLayout>
-        
-        {/* Cabecera Principal */}
         <PageHeader 
           title="Explorar Aportes"
           description="Resúmenes, parciales y guías compartidas por la comunidad de LA UTN."
           iconType="documentFill"
-           colorTheme="orange"
+          colorTheme="orange"
          >
            <Button variant="secondary" onClick={() => setIsAddModalOpen(true)} className="text-xs bg-orange-600/20 text-orange-500 border-none hover:bg-orange-600 hover:text-white transition-all">
              + Aportar Archivo (+1 Punto)
@@ -86,7 +74,6 @@ export const Explore: React.FC = () => {
           )}
         </PageHeader>
 
-        {/* Organismo: Filtros */}
         <ResourceFilters 
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
           carrera={carrera} setCarrera={setCarrera}
@@ -95,26 +82,19 @@ export const Explore: React.FC = () => {
           onClear={handleClearFilters}
         />
 
-        {/* Organismo: Tabla de Resultados */}
         <ResourcesTable 
           resources={filteredResources} 
           isLoading={isLoading} 
           onAddClick={() => setIsAddModalOpen(true)} 
         />
 
-
-
-      {/* Renderizado Perezoso de Modales (Solo se cargan si se activan) */}
       <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
         {isAddModalOpen && (
           <AddResourceModal 
             isOpen={isAddModalOpen} 
             onClose={() => setIsAddModalOpen(false)} 
             isAdmin={isAdmin} 
-            onResourceAdded={(newRes, isDirect) => {
-              if (isDirect) setAllResources(prev => [newRes, ...prev]);
-              else if (isAdmin) setPendingCount(prev => prev + 1);
-            }}
+            // 🔴 ELIMINADO: onResourceAdded (El invalidateQueries lo hace solo)
           />
         )}
         
@@ -122,10 +102,7 @@ export const Explore: React.FC = () => {
           <AdminPendingResourcesModal 
             isOpen={isAdminModalOpen} 
             onClose={() => setIsAdminModalOpen(false)} 
-            onResourceApproved={(res) => {
-              setAllResources(prev => [res, ...prev]);
-              setPendingCount(prev => prev - 1);
-            }}
+            // 🔴 ELIMINADO: onResourceApproved
           />
         )}
       </Suspense>

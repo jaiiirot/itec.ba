@@ -1,38 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { resourcesService } from '../../services/resourcesService';
+import React from 'react';
 import type { ResourceData } from '../../services/resourcesService';
+
+// Importamos los hooks de pendiente, aceptar y rechazar
+import { usePendingResources, useApprovePendingResource, useRejectPendingResource } from '../../hooks/useResources';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onResourceApproved: (res: ResourceData) => void;
 }
 
-export const AdminPendingResourcesModal: React.FC<Props> = ({ isOpen, onClose, onResourceApproved }) => {
-  const [pending, setPending] = useState<ResourceData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const AdminPendingResourcesModal: React.FC<Props> = ({ isOpen, onClose }) => {
+  // Traemos la data del caché (cargará al instante)
+  const { data: pending = [], isLoading } = usePendingResources(true);
+  
+  const approveMutation = useApprovePendingResource();
+  const rejectMutation = useRejectPendingResource();
 
-  useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      resourcesService.getPendingResources().then(setPending).finally(() => setIsLoading(false));
-    }
-  }, [isOpen]);
-
-  const handleApprove = async (res: ResourceData) => {
-    try {
-      const newId = await resourcesService.approvePendingResource(res);
-      setPending(prev => prev.filter(r => r.id !== res.id));
-      onResourceApproved({ ...res, id: newId });
-    } catch (e) { alert("Error al aprobar."); }
+  const handleApprove = (res: ResourceData) => {
+    approveMutation.mutate(res, {
+      onError: () => alert("Error al aprobar.")
+    });
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = (id: string) => {
     if (!window.confirm("¿Rechazar este aporte?")) return;
-    try {
-      await resourcesService.rejectPendingResource(id);
-      setPending(prev => prev.filter(r => r.id !== id));
-    } catch (e) { alert("Error al rechazar."); }
+    rejectMutation.mutate(id, {
+      onError: () => alert("Error al rechazar.")
+    });
   };
 
   if (!isOpen) return null;
@@ -73,8 +67,8 @@ export const AdminPendingResourcesModal: React.FC<Props> = ({ isOpen, onClose, o
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-2">
                         <a href={res.link} target="_blank" rel="noreferrer" className="px-3 py-1.5 text-xs bg-itec-gray text-white rounded-lg">Ver Archivo</a>
-                        <button onClick={() => handleReject(res.id)} className="px-3 py-1.5 text-xs bg-itec-red/10 text-itec-red-skye rounded-lg">Rechazar</button>
-                        <button onClick={() => handleApprove(res)} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg">Aprobar</button>
+                        <button onClick={() => handleReject(res.id as string)} disabled={rejectMutation.isPending} className="px-3 py-1.5 text-xs bg-itec-red/10 text-itec-red-skye rounded-lg disabled:opacity-50">Rechazar</button>
+                        <button onClick={() => handleApprove(res)} disabled={approveMutation.isPending} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg disabled:opacity-50">Aprobar</button>
                       </div>
                     </td>
                   </tr>

@@ -4,15 +4,16 @@ import { Select } from '../../../../components/atoms/Select';
 import { Button } from '../../../../components/atoms/Button';
 import { Icons } from '../../../../components/atoms/Icons';
 import { CARRERAS_OPTIONS, NIVEL_OPTIONS, MATERIAS_POR_CARRERA } from '../../../groups/types/groups';
-import type { ResourceData } from '../../services/resourcesService';
-import { resourcesService } from '../../services/resourcesService';
 import { useAuth } from '../../../../context/AuthContext';
+
+// 🟢 NUEVO: Importamos la mutación
+import { useSubmitResource } from '../../hooks/useResources';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   isAdmin: boolean;
-  onResourceAdded: (newRes: ResourceData, isDirectPublish: boolean) => void;
+  // 🔴 BORRADO: onResourceAdded
 }
 
 const TIPOS_ARCHIVO = [
@@ -30,18 +31,20 @@ const FORMATOS_ARCHIVO = [
   { value: 'Notion', label: 'Notion / Web' },
   { value: 'ZIP', label: 'Archivo Comprimido' },
 ];
-
-export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, onResourceAdded }) => {
-  const { user, isAuthenticated, loginWithGoogle, addPoints } = useAuth(); // <-- Importamos addPoints
+export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin }) => {
+  const { user, isAuthenticated, loginWithGoogle, addPoints } = useAuth();
+  
+  const submitMutation = useSubmitResource(); // 🟢 Instanciamos mutación
 
   const [form, setForm] = useState({ title: '', carrera: '', nivel: '', materia: '', tipo: 'Apunte', formato: 'PDF', link: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [successInfo, setSuccessInfo] = useState({ title: '', desc: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isPending = submitMutation.isPending; // 🟢 Reemplaza isSubmitting
 
   const materiasDisponibles = (form.carrera && form.nivel && MATERIAS_POR_CARRERA[form.carrera] && MATERIAS_POR_CARRERA[form.carrera][form.nivel])
     ? MATERIAS_POR_CARRERA[form.carrera][form.nivel] : [];
@@ -54,52 +57,50 @@ export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, on
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isPending) return;
 
     setError('');
     if (!form.title || !form.carrera || !form.nivel || !form.materia || !form.link) {
       setError('Completá todos los campos obligatorios.'); return;
     }
 
-    setIsSubmitting(true);
+    const isDirectPublish = isAuthenticated;
+    const newResourceData = {
+      title: form.title,
+      carrera: form.carrera,
+      nivel: form.nivel,
+      materia: form.materia,
+      tipo: form.tipo,
+      formato: form.formato,
+      link: form.link,
+      autor: 'Comunidad ITEC',
+      submittedBy: user?.email || 'invitado'
+    };
 
-    try {
-      const isDirectPublish = isAuthenticated;
-      const newResourceData = {
-        title: form.title,
-        carrera: form.carrera,
-        nivel: form.nivel,
-        materia: form.materia,
-        tipo: form.tipo,
-        formato: form.formato,
-        link: form.link,
-        autor: 'Comunidad ITEC', // Ahora es anónimo para el usuario final
-        submittedBy: user?.email || 'invitado' // Guardado solo de forma interna
-      };
+    // 🟢 Ejecutamos la mutación en lugar de la función suelta
+    submitMutation.mutate(
+      { data: newResourceData, isDirectPublish },
+      {
+        onSuccess: async () => {
+          if (isDirectPublish) {
+            await addPoints(1); // Sumamos el punto si se publica directo
+            setSuccessInfo({ title: '¡Aporte Publicado!', desc: '¡Ganaste +1 Punto ITEC! Gracias por colaborar con la comunidad.' });
+          } else {
+            setSuccessInfo({ title: '¡Solicitud Enviada!', desc: 'Tu aporte fue enviado a revisión. Un admin lo validará pronto.' });
+          }
 
-      const newId = await resourcesService.submitNewResource(newResourceData, isDirectPublish);
-
-      if (isDirectPublish) {
-        await addPoints(1); // <-- LE DAMOS 10 PUNTOS AL ESTUDIANTE!
-        setSuccessInfo({ title: '¡Aporte Publicado!', desc: '¡Ganaste +1 Punto ITEC! Gracias por colaborar con la comunidad.' });
-        onResourceAdded({ id: newId, ...newResourceData }, true);
-      } else {
-        setSuccessInfo({ title: '¡Solicitud Enviada!', desc: 'Tu aporte fue enviado a revisión. Un admin lo validará pronto.' });
-        onResourceAdded({ id: newId, ...newResourceData }, false);
+          setSuccess(true);
+          setTimeout(() => { 
+            setSuccess(false); 
+            setForm({ title: '', carrera: '', nivel: '', materia: '', tipo: 'Apunte', formato: 'PDF', link: '' }); 
+            onClose(); 
+          }, 3000);
+        },
+        onError: () => {
+          setError('Error al enviar el archivo. Revisa tu conexión a la base de datos.');
+        }
       }
-
-      setSuccess(true);
-      setTimeout(() => { 
-        setSuccess(false); 
-        setIsSubmitting(false); 
-        setForm({ title: '', carrera: '', nivel: '', materia: '', tipo: 'Apunte', formato: 'PDF', link: '' }); 
-        onClose(); 
-      }, 3000);
-
-    } catch {
-      setError('Error al enviar el archivo. Revisa tu conexión a Firebase.');
-      setIsSubmitting(false);
-    }
+    );
   };
 
   if (!isOpen) return null;
@@ -107,7 +108,7 @@ export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, on
   return (
     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-itec-surface border border-itec-gray rounded-3xl w-full max-w-xl shadow-2xl p-8 relative animate-in zoom-in-95 duration-200 my-8">
-        <button onClick={onClose} disabled={isSubmitting} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-500 hover:text-white transition-colors">✖</button>
+        <button onClick={onClose} disabled={isPending} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-500 hover:text-white transition-colors">✖</button>
         <h2 className="text-2xl font-bold text-white mb-2">Aportar Archivo</h2>
         <p className="text-sm text-gray-400 mb-6">Sube material y gana <strong className="text-yellow-500">+1 Punto ITEC</strong>.</p>
 
@@ -178,8 +179,8 @@ export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, on
             {error && <p className="text-itec-red-skye text-xs font-bold bg-itec-red/10 p-2 rounded">{error}</p>}
 
             <div className="pt-4 flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting} className="bg-itec-bg border-none text-gray-400">Cancelar</Button>
-              <Button type="submit" variant="primary" disabled={isSubmitting} className="bg-orange-600 hover:bg-orange-500 border-none text-white font-bold">{isSubmitting ? 'Subiendo...' : 'Publicar y Ganar Puntos'}</Button>
+              <Button type="button" variant="secondary" onClick={onClose} disabled={isPending} className="bg-itec-bg border-none text-gray-400">Cancelar</Button>
+              <Button type="submit" variant="primary" disabled={isPending} className="bg-orange-600 hover:bg-orange-500 border-none text-white font-bold">{isPending ? 'Subiendo...' : 'Publicar y Ganar Puntos'}</Button>
             </div>
           </form>
         )}

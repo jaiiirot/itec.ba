@@ -1,44 +1,33 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { DashboardLayout } from '../components/templates/DashboardLayout';
-import { Button } from '../components/atoms/Button';
+import React, { useState, useMemo, Suspense } from 'react';
+import { DashboardLayout } from '@/components/templates/DashboardLayout';
+import { Button } from '@/components/atoms/Button';
 
-import { useAuth } from '../context/AuthContext';
-import { groupsService, type GroupData } from '../features/groups/services/groupsService';
+import { useAuth } from '@/context/AuthContext';
+import { GroupFilters } from '@features/groups/components/organisms/GroupFilters';
+import { SpecialtyGrid } from '@features/groups/components/organisms/SpecialtyGrid';
+import { GroupResults } from '@features/groups/components/organisms/GroupResults';
+import { PageHeader } from '@/components/molecules/PageHeader';
 
-import { GroupFilters } from '../features/groups/components/organisms/GroupFilters';
-import { SpecialtyGrid } from '../features/groups/components/organisms/SpecialtyGrid';
-import { GroupResults } from '../features/groups/components/organisms/GroupResults';
-import { PageHeader } from '../components/molecules/PageHeader';
+// Importamos los hooks
+import { useApprovedGroups, usePendingGroups } from '@features/groups/hooks/useGroups';
 
-const AddGroupModal = React.lazy(() => import('../features/groups/components/organisms/AddGroupModal').then(m => ({ default: m.AddGroupModal })));
-const AdminPendingGroupsModal = React.lazy(() => import('../features/groups/components/organisms/AdminPendingGroupsModal').then(m => ({ default: m.AdminPendingGroupsModal })));
+const AddGroupModal = React.lazy(() => import('@features/groups/components/organisms/AddGroupModal').then(m => ({ default: m.AddGroupModal })));
+const AdminPendingGroupsModal = React.lazy(() => import('@features/groups/components/organisms/AdminPendingGroupsModal').then(m => ({ default: m.AdminPendingGroupsModal })));
 
 export const GroupsPage: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
-  const [allGroups, setAllGroups] = useState<GroupData[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  // Traemos los datos cacheados
+  const { data: allGroups = [], isLoading: isLoadingGroups } = useApprovedGroups();
+  const { data: pendingGroups = [] } = usePendingGroups(isAdmin);
+  const pendingCount = pendingGroups.length;
 
   // Estados de Búsqueda
   const [carrera, setCarrera] = useState('');
   const [nivel, setNivel] = useState('');
   const [materia, setMateria] = useState('');
   const [comision, setComision] = useState('');
-  
   const [hasSearched, setHasSearched] = useState(false);
-
-  useEffect(() => {
-    setIsLoadingGroups(true);
-    groupsService.getApprovedGroups()
-      .then(dbGroups => setAllGroups(dbGroups))
-      .catch(err => console.error("Error al cargar grupos:", err))
-      .finally(() => setIsLoadingGroups(false));
-
-    if (isAdmin) {
-      groupsService.getPendingGroups().then(pendings => setPendingCount(pendings.length));
-    }
-  }, [isAdmin]);
 
   const handleClear = () => {
     setCarrera(''); setNivel(''); setMateria(''); setComision('');
@@ -53,14 +42,12 @@ export const GroupsPage: React.FC = () => {
     setHasSearched(true);
   };
 
-  // 🔴 MEJORA PREMIUM: Filtrado seguro con useMemo (Eliminamos el useState sobrante)
   const filteredResults = useMemo(() => {
     if (!hasSearched) return [];
     
     return allGroups.filter(g => {
       const matchCarrera = carrera === '' || g.carrera === carrera;
       const matchNivel = nivel === '' || g.nivel === nivel;
-      // BLINDAJE CONTRA CRASH: Usamos (g.materia || '') por si MongoDB devuelve un dato incompleto
       const matchMateria = materia === '' || (g.materia || '').toLowerCase().includes(materia.toLowerCase());
       const matchComision = comision === '' || (g.comision || '').toLowerCase().includes(comision.toLowerCase());
       
@@ -74,7 +61,6 @@ export const GroupsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-        
         <PageHeader 
             title="Grupos de WhatsApp"
             description="Encontrá la comunidad de tu materia o comisión."
@@ -103,7 +89,7 @@ export const GroupsPage: React.FC = () => {
           materia={materia} setMateria={setMateria}
           comision={comision} setComision={setComision}
           isLoading={isLoadingGroups}
-          onSearch={() => setHasSearched(true)} // Solo activa el render, useMemo hace el resto
+          onSearch={() => setHasSearched(true)}
           onClear={handleClear}
         />
 
@@ -132,10 +118,7 @@ export const GroupsPage: React.FC = () => {
             isAdmin={isAdmin} 
             userEmail={user?.email || 'invitado'} 
             existingGroups={allGroups}
-            onGroupAdded={(newGroup, isDirectPublish) => {
-              if (isDirectPublish) setAllGroups(prev => [...prev, newGroup]);
-              else if (isAdmin) setPendingCount(prev => prev + 1);
-            }}
+            // 🔴 BORRAMOS onGroupAdded
           />
         )}
 
@@ -143,14 +126,10 @@ export const GroupsPage: React.FC = () => {
           <AdminPendingGroupsModal 
             isOpen={isAdminModalOpen} 
             onClose={() => setIsAdminModalOpen(false)} 
-            onGroupApproved={(group) => {
-              setAllGroups(prev => [...prev, group]);
-              setPendingCount(prev => prev - 1);
-            }}
+            // 🔴 BORRAMOS onGroupApproved
           />
         )}
       </Suspense>
-
     </DashboardLayout>
   );
 };

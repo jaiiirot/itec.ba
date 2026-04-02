@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/atoms/Button';
 import { Icons } from '@/components/atoms/Icons';
-import { coursesService } from '../../services/coursesService';
-import type { CourseData } from '../../services/coursesService';
+import { coursesService, type CourseData } from '../../services/coursesService';
 import { CourseGeneralData } from '../molecules/CourseGeneralData';
 import { CourseVideoListEditor, type VideoItem } from './CourseVideoListEditor';
+import { useAddCourse, useUpdateCourse } from '../../hooks/useCourses';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onCourseAdded: (newCourse: CourseData) => void;
   existingCourse?: CourseData | null; 
 }
 
-export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded, existingCourse }) => {
+export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, existingCourse }) => {
   // Estados Generales
   const [courseTitle, setCourseTitle] = useState('');
   const [courseDesc, setCourseDesc] = useState('');
@@ -28,8 +27,14 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
   
   // Estados de Control
   const [isFetching, setIsFetching] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  // Inicializamos las mutaciones
+  const addCourseMutation = useAddCourse();
+  const updateCourseMutation = useUpdateCourse();
+
+  // Estado de carga unificado que nos da React Query gratis
+  const isPending = addCourseMutation.isPending || updateCourseMutation.isPending;
 
   // Pre-cargar datos si estamos en Modo Edición
   useEffect(() => {
@@ -49,6 +54,7 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
     }
   }, [existingCourse]);
 
+  // (handleFetchPlaylist queda exactamente igual, porque es solo una consulta útil, no altera la base de datos)
   const handleFetchPlaylist = async () => {
     if (!playlistUrl) return;
     setIsFetching(true);
@@ -77,7 +83,7 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
-    if (isSubmitting) return;
+    if (isPending) return; // Evitamos doble click usando el isPending de React Query
     setError('');
 
     const cleanVideos = videos.filter(v => v.title.trim() && v.youtubeId.trim());
@@ -91,40 +97,41 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
       return;
     }
 
-    setIsSubmitting(true);
+    const finalImageUrl = imageUrl || `https://i.ytimg.com/vi/${cleanVideos[0].youtubeId}/hqdefault.jpg`;
 
-    try {
-      const finalImageUrl = imageUrl || `https://i.ytimg.com/vi/${cleanVideos[0].youtubeId}/hqdefault.jpg`;
+    const coursePayload = {
+      title: courseTitle,
+      description: courseDesc,
+      imageUrl: finalImageUrl,
+      materia: materia,
+      categoria: categoria,
+      videos: cleanVideos.map((v, idx) => ({
+        id: `v_${Date.now()}_${idx}`,
+        youtubeId: v.youtubeId,
+        title: v.title,
+        duration: v.duration || '0:00'
+      }))
+    };
 
-      const coursePayload = {
-        title: courseTitle,
-        description: courseDesc,
-        imageUrl: finalImageUrl,
-        materia: materia,
-        categoria: categoria,
-        videos: cleanVideos.map((v, idx) => ({
-          id: `v_${Date.now()}_${idx}`,
-          youtubeId: v.youtubeId,
-          title: v.title,
-          duration: v.duration || '0:00'
-        }))
-      };
-
-      if (existingCourse && (existingCourse.id || (existingCourse as any)._id)) {
-        const idToUpdate = existingCourse.id || (existingCourse as any)._id;
-        await coursesService.updateCourse(idToUpdate as string, coursePayload);
-        onCourseAdded({ ...existingCourse, ...coursePayload } as CourseData);
-      } else {
-        const newId = await coursesService.addCourse({ ...coursePayload, progress: 0, playlistId: mode === 'youtube' ? playlistUrl : `custom_${Date.now()}` } as any);
-        onCourseAdded({ id: newId, progress: 0, playlistId: mode === 'youtube' ? playlistUrl : `custom_${Date.now()}`, ...coursePayload } as CourseData);
-      }
-
-      setIsSubmitting(false);
-      onClose();
-    } catch (err) {
-      console.error(err);
-      setError(`Error al ${existingCourse ? 'actualizar' : 'subir'} el curso en la base de datos.`);
-      setIsSubmitting(false);
+    //Lógica limpia usando .mutate()
+    if (existingCourse && (existingCourse.id || (existingCourse as any)._id)) {
+      const idToUpdate = existingCourse.id || (existingCourse as any)._id;
+      
+      updateCourseMutation.mutate(
+        { id: idToUpdate as string, courseData: coursePayload },
+        {
+          onSuccess: () => onClose(), // Si todo va bien, cerramos el modal. La tabla de fondo se refresca sola.
+          onError: () => setError('Error al actualizar el curso en la base de datos.')
+        }
+      );
+    } else {
+      addCourseMutation.mutate(
+        { ...coursePayload, progress: 0, playlistId: mode === 'youtube' ? playlistUrl : `custom_${Date.now()}` } as any,
+        {
+          onSuccess: () => onClose(),
+          onError: () => setError('Error al subir el curso en la base de datos.')
+        }
+      );
     }
   };
 
@@ -134,7 +141,7 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
     <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
       <div className="bg-itec-bg border border-itec-gray rounded-3xl w-full max-w-3xl max-h-[90vh] shadow-2xl relative flex flex-col overflow-hidden">
 
-        <button onClick={onClose} disabled={isSubmitting} className="absolute top-5 right-5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-itec-surface border border-itec-gray text-gray-500 hover:text-white transition-colors disabled:opacity-50">
+        <button onClick={onClose} disabled={isPending} className="absolute top-5 right-5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-itec-surface border border-itec-gray text-gray-500 hover:text-white transition-colors disabled:opacity-50">
           <Icons type="close" className="w-4 h-4" />
         </button>
 
@@ -156,7 +163,6 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
             
-            {/* 🔴 Aquí inyectamos el componente de Datos Generales */}
             <CourseGeneralData 
               title={courseTitle} setTitle={setCourseTitle} 
               image={imageUrl} setImage={setImageUrl} 
@@ -165,7 +171,6 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
               categoria={categoria} setCategoria={setCategoria}
             />
             
-            {/* 🔴 Aquí inyectamos el componente Editor de Lista de Videos */}
             <CourseVideoListEditor 
               videos={videos} setVideos={setVideos}
               mode={mode} setMode={setMode}
@@ -176,11 +181,12 @@ export const AddCourseModal: React.FC<Props> = ({ isOpen, onClose, onCourseAdded
           </div>
 
           <div className="p-6 border-t border-itec-gray bg-itec-surface flex justify-end gap-3 shrink-0">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting} className="bg-itec-bg border-itec-gray text-gray-400 hover:text-white">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending} className="bg-itec-bg border-itec-gray text-gray-400 hover:text-white">
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" disabled={isSubmitting || videos.length === 0} className="bg-white text-black hover:bg-gray-200 border-none">
-              {isSubmitting ? 'Guardando...' : (existingCourse ? 'Guardar Cambios' : 'Publicar Curso')}
+            {/* Usamos isPending en el botón */}
+            <Button type="submit" variant="primary" disabled={isPending || videos.length === 0} className="bg-white text-black hover:bg-gray-200 border-none">
+              {isPending ? 'Guardando...' : (existingCourse ? 'Guardar Cambios' : 'Publicar Curso')}
             </Button>
           </div>
         </form>

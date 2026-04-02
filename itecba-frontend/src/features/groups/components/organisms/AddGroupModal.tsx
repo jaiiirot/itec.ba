@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Input } from '../../../../components/atoms/Input';
-import { Select } from '../../../../components/atoms/Select';
-import { Button } from '../../../../components/atoms/Button';
-import { Icons } from '../../../../components/atoms/Icons'; // Importamos los íconos para el botón de Google
+import { Input } from '@/components/atoms/Input';
+import { Select } from '@/components/atoms/Select';
+import { Button } from '@/components/atoms/Button';
+import { Icons } from '@/components/atoms/Icons';
 import { CARRERAS_OPTIONS, NIVEL_OPTIONS, MATERIAS_POR_CARRERA } from '../../types/groups';
 import { groupsService, type GroupData } from '../../services/groupsService';
-import { useAuth } from '../../../../context/AuthContext'; // Importamos el contexto de Auth
+import { useAuth } from '@/context/AuthContext';
+
+// Importar mutación
+import { useSubmitGroup } from '../../hooks/useGroups';
 
 interface Props {
   isOpen: boolean;
@@ -13,21 +16,22 @@ interface Props {
   isAdmin: boolean;
   userEmail: string;
   existingGroups: GroupData[];
-  onGroupAdded: (newGroup: GroupData, isDirectPublish: boolean) => void;
 }
 
-export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, existingGroups, onGroupAdded }) => {
-  // Extraemos el estado de sesión directamente en el modal
+export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, existingGroups }) => {
   const { user, isAuthenticated, loginWithGoogle } = useAuth();
+  
+  const submitGroupMutation = useSubmitGroup(); // 🟢 Instanciamos mutación
 
   const [form, setForm] = useState<{carrera: string, nivel: string, materia: string, comision: string, link: string, tipo: 'Alumnos' | 'Oficial'}>({ carrera: '', nivel: '', materia: '', comision: '', link: '', tipo: 'Alumnos' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [successInfo, setSuccessInfo] = useState({ title: '', desc: '' });
   
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isPending = submitGroupMutation.isPending; // 🟢 Reemplaza a isSubmitting
 
   const materiasDisponibles = (form.carrera && form.nivel && MATERIAS_POR_CARRERA[form.carrera] && MATERIAS_POR_CARRERA[form.carrera][form.nivel])
     ? MATERIAS_POR_CARRERA[form.carrera][form.nivel]
@@ -42,21 +46,13 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
   }, []);
 
   const handleCarreraChange = (val: string) => {
-    if (val === 'ingreso') {
-      setForm({ ...form, carrera: val, nivel: '0', materia: '' });
-    } else {
-      setForm({ ...form, carrera: val, nivel: '', materia: '' });
-    }
-  };
-
-  const handleNivelChange = (val: string) => {
-    setForm({ ...form, nivel: val, materia: '' });
+    if (val === 'ingreso') setForm({ ...form, carrera: val, nivel: '0', materia: '' });
+    else setForm({ ...form, carrera: val, nivel: '', materia: '' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-
+    if (isPending) return;
     setError('');
     
     if (!form.carrera || !form.nivel || !form.materia || !form.comision || !form.link) {
@@ -66,8 +62,6 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
       setError('Por favor, selecciona una materia válida de la lista desplegable.'); return;
     }
 
-    setIsSubmitting(true);
-
     try {
       const isDupApproved = existingGroups.some(g => 
         (g.materia === form.materia && g.comision.toLowerCase() === form.comision.toLowerCase()) || g.link === form.link
@@ -75,17 +69,15 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
 
       if (isDupApproved) {
         setError(`Este link o la comisión ${form.comision.toUpperCase()} ya están registrados.`);
-        setIsSubmitting(false); return;
+        return;
       }
 
-      // Evitamos que los invitados manden spam revisando la cola de pendientes
       const isDupPending = await groupsService.checkIsDuplicatePending(form.materia, form.comision, form.link);
       if (isDupPending) {
         setError('Este grupo ya fue sugerido por otra persona y está esperando aprobación.');
-        setIsSubmitting(false); return;
+         return;
       }
 
-      // Si el usuario está logueado, publica directamente. Si no, va a revisión.
       const isDirectPublish = isAuthenticated;
 
       const newGroupData = {
@@ -95,39 +87,46 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
         comision: form.comision.toUpperCase(),
         link: form.link,
         tipo: isAdmin ? form.tipo : 'Alumnos',
-        submittedBy: user?.email || 'invitado' // Toma el mail real si se logueó
+        submittedBy: user?.email || 'invitado'
       };
 
-      const newId = await groupsService.submitNewGroup(newGroupData, isDirectPublish);
-
-      if (isDirectPublish) {
-        setSuccessInfo({ title: '¡Grupo Publicado!', desc: 'Gracias por tu aporte. Tu grupo ya está visible para todos.' });
-        onGroupAdded({ id: newId, ...newGroupData }, true);
-      } else {
-        setSuccessInfo({ title: '¡Solicitud Enviada!', desc: 'Tu grupo fue enviado a revisión. Un administrador lo publicará pronto.' });
-        onGroupAdded({ id: newId, ...newGroupData }, false);
-      }
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setIsSubmitting(false);
-        onClose();
-      }, 3000);
+      // Usamos mutate en lugar de llamar directo al service
+      submitGroupMutation.mutate(
+        { data: newGroupData, isDirectPublish },
+        {
+          onSuccess: () => {
+            if (isDirectPublish) {
+              setSuccessInfo({ title: '¡Grupo Publicado!', desc: 'Gracias por tu aporte. Tu grupo ya está visible para todos.' });
+            } else {
+              setSuccessInfo({ title: '¡Solicitud Enviada!', desc: 'Tu grupo fue enviado a revisión. Un administrador lo publicará pronto.' });
+            }
+            
+            setSuccess(true);
+            setTimeout(() => {
+              setSuccess(false);
+              onClose();
+            }, 3000);
+          },
+          onError: () => {
+            setError('Ocurrió un error al enviar el grupo. Revisa tu conexión.');
+          }
+        }
+      );
 
     } catch {
-      setError('Ocurrió un error al enviar el grupo. Revisa tu conexión.');
-      setIsSubmitting(false);
+      setError('Ocurrió un error al validar el grupo.');
     }
   };
 
   if (!isOpen) return null;
 
   return (
+    // ... todo el return se mantiene EXACTAMENTE IGUAL, solo asegúrate de cambiar "isSubmitting" por "isPending" en los botones ...
+    // (Omito el HTML repetido para no alargar el mensaje, es tu mismo diseño)
     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-3xl w-full max-w-lg shadow-2xl p-8 relative animate-in zoom-in-95 duration-200">
         
-        <button onClick={onClose} disabled={isSubmitting} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-500 hover:text-white hover:bg-itec-gray transition-colors disabled:opacity-50">✖</button>
+        <button onClick={onClose} disabled={isPending} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-500 hover:text-white hover:bg-itec-gray transition-colors disabled:opacity-50">✖</button>
         <h2 className="text-2xl font-bold text-white mb-2">Aportar Grupo</h2>
         <p className="text-sm text-gray-400 mb-6">Seleccioná tu carrera y año para encontrar tu materia.</p>
 
@@ -139,30 +138,19 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* === BANNER INVITANDO A INICIAR SESIÓN (Solo si es visitante) === */}
+            {/* INICIO DE TU FORMULARIO */}
             {!isAuthenticated && (
               <div className="bg-gradient-to-r from-itec-blue/20 to-transparent border border-itec-blue/30 rounded-xl p-4 mb-2 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg animate-in fade-in">
                 <div>
-                  <h4 className="text-[13px] font-bold text-white mb-1 flex items-center gap-1.5">
-                    <span className="text-itec-blue-skye text-base">🎓</span> ¿Sos de la UTN?
-                  </h4>
-                  <p className="text-[11px] text-gray-400 leading-tight">
-                    Iniciá sesión para publicar sin revisión y solicitar tu <strong className="text-white">TarjeTEC</strong> con beneficios exclusivos.
-                  </p>
+                  <h4 className="text-[13px] font-bold text-white mb-1 flex items-center gap-1.5"><span className="text-itec-blue-skye text-base">🎓</span> ¿Sos de la UTN?</h4>
+                  <p className="text-[11px] text-gray-400 leading-tight">Iniciá sesión para publicar sin revisión y solicitar tu <strong className="text-white">TarjeTEC</strong> con beneficios exclusivos.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={loginWithGoogle}
-                  className="shrink-0 bg-white hover:bg-gray-200 text-black text-[11px] font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-md"
-                >
-                  <div className="w-4 h-4 text-blue-600"><Icons type="google" /></div>
-                  Iniciar Sesión
+                <button type="button" onClick={loginWithGoogle} className="shrink-0 bg-white hover:bg-gray-200 text-black text-[11px] font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-md">
+                  <div className="w-4 h-4 text-blue-600"><Icons type="google" /></div> Iniciar Sesión
                 </button>
               </div>
             )}
             
-            {/* CASCADA PASO 1 y 2 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Carrera / Área</label>
@@ -174,24 +162,13 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
               </div>
             </div>
 
-            {/* CASCADA PASO 3 (Materia Automática) */}
             <div ref={dropdownRef} className="relative">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Materia Oficial</label>
-              <Input 
-                fullWidth 
-                disabled={!form.carrera || !form.nivel}
-                placeholder={!form.carrera || !form.nivel ? "Seleccioná Carrera y Año primero..." : "Hacé click para buscar..."} 
-                value={form.materia} 
-                onChange={e => { setForm({...form, materia: e.target.value}); setShowDropdown(true); }} 
-                onFocus={() => setShowDropdown(true)} 
-                className="text-sm py-2.5 bg-itec-bg border-itec-gray focus:border-itec-blue transition-colors text-white disabled:opacity-50" 
-              />
+              <Input fullWidth disabled={!form.carrera || !form.nivel} placeholder={!form.carrera || !form.nivel ? "Seleccioná Carrera y Año primero..." : "Hacé click para buscar..."} value={form.materia} onChange={e => { setForm({...form, materia: e.target.value}); setShowDropdown(true); }} onFocus={() => setShowDropdown(true)} className="text-sm py-2.5 bg-itec-bg border-itec-gray focus:border-itec-blue transition-colors text-white disabled:opacity-50" />
               {showDropdown && materiasDisponibles.length > 0 && (
                 <ul className="absolute z-50 w-full mt-2 bg-itec-sidebar border border-itec-gray rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
                   {materiasDisponibles.filter(m => m.toLowerCase().includes(form.materia.toLowerCase())).map(m => (
-                    <li key={m} onClick={() => { setForm({...form, materia: m}); setShowDropdown(false); }} className="px-4 py-2.5 text-sm text-gray-300 hover:bg-itec-blue hover:text-white cursor-pointer transition-colors border-b border-itec-gray/50 last:border-0">
-                      {m}
-                    </li>
+                    <li key={m} onClick={() => { setForm({...form, materia: m}); setShowDropdown(false); }} className="px-4 py-2.5 text-sm text-gray-300 hover:bg-itec-blue hover:text-white cursor-pointer transition-colors border-b border-itec-gray/50 last:border-0">{m}</li>
                   ))}
                   {materiasDisponibles.filter(m => m.toLowerCase().includes(form.materia.toLowerCase())).length === 0 && (
                      <li className="px-4 py-2.5 text-sm text-gray-500 text-center">No se encontraron materias</li>
@@ -226,11 +203,12 @@ export const AddGroupModal: React.FC<Props> = ({ isOpen, onClose, isAdmin, exist
             )}
 
             <div className="pt-6 flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting} className="bg-itec-bg border-itec-gray hover:bg-itec-gray text-gray-300">Cancelar</Button>
-              <Button type="submit" variant="primary" disabled={isSubmitting} className="bg-itec-blue hover:bg-itec-blue-skye border-none text-white shadow-lg min-w-32 cursor-pointer">
-                {isSubmitting ? 'Enviando...' : 'Subir Grupo'}
+              <Button type="button" variant="secondary" onClick={onClose} disabled={isPending} className="bg-itec-bg border-itec-gray hover:bg-itec-gray text-gray-300">Cancelar</Button>
+              <Button type="submit" variant="primary" disabled={isPending} className="bg-itec-blue hover:bg-itec-blue-skye border-none text-white shadow-lg min-w-32 cursor-pointer">
+                {isPending ? 'Enviando...' : 'Subir Grupo'}
               </Button>
             </div>
+            {/* FIN DE TU FORMULARIO */}
           </form>
         )}
       </div>
