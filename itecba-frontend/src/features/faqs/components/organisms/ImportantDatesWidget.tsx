@@ -69,7 +69,7 @@ export const ImportantDatesWidget: React.FC<Props> = ({ isAdmin }) => {
       )}
 
       {isAdmin && isModalOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/60" />}>
           <AddDateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={(newDate) => setDates(prev => [...prev, newDate])} />
         </Suspense>
       )}

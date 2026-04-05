@@ -181,7 +181,7 @@ export const CourseDetail: React.FC = () => {
           </div>
         </div>
 
-      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/60" />}>
         {isMaterialModalOpen && (
           <CourseMaterialModal 
             isOpen={isMaterialModalOpen} 
@@ -191,7 +191,7 @@ export const CourseDetail: React.FC = () => {
         )}
         
       {isAdmin && isEditModalOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/60" />}>
           <AddCourseModal 
             isOpen={isEditModalOpen} 
             onClose={() => setIsEditModalOpen(false)} 

@@ -33,7 +33,7 @@ export const AdminAdmissionDatesModal: React.FC<Props> = ({ isOpen, onClose, eve
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-3xl w-full max-w-md shadow-2xl p-6 relative">
         <button onClick={onClose} className="absolute top-5 right-5 text-gray-500 hover:text-white">
           <Icons type="close" className="w-4 h-4" />

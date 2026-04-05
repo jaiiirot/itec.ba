@@ -1,130 +1,61 @@
-// src/pages/Courses.tsx
-import React, { useState, Suspense, useMemo } from "react";
-// Ya no necesitamos importar useQueryClient aquí directamente
-
-// Importaciones con Alias Global
+import React, { useState, Suspense } from "react";
 import { DashboardLayout } from "@/components/templates/DashboardLayout";
-import { Button } from "@/components/atoms/Button";
 import { PageHeader } from "@/components/molecules/PageHeader";
 import { useAuth } from "@/context/AuthContext";
+import { Icons } from "@/components/atoms/Icons";
 
-// Importaciones con Alias de Features
 import { useCourses, useDeleteCourse } from "@features/courses/hooks/useCourses"; 
-import { CourseGrid, type CourseWithLocalProgress } from "@features/courses/components/organisms/CourseGrid";
+import { useCourseSearch } from "@features/courses/hooks/useCourseSearch";
+import { CourseGrid } from "@features/courses/components/organisms/CourseGrid";
 import { CourseFilters } from "@features/courses/components/molecules/CourseFilters";
 
-// Lazy load del modal con Alias
 const AddCourseModal = React.lazy(() =>
   import("@features/courses/components/organisms/AddCourseModal").then((m) => ({ default: m.AddCourseModal }))
 );
 
 export const CoursesPage: React.FC = () => {
   const { isAdmin } = useAuth();
-
-  // 1. OBTENEMOS LOS DATOS Y MUTACIONES CON REACT QUERY
-  const { data: dbCourses = [], isLoading } = useCourses();
-  const deleteCourseMutation = useDeleteCourse(); // 🟢 NUEVO: Traemos nuestra mutación para borrar
-
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Estados de los filtros
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMateria, setSelectedMateria] = useState("");
-  const [selectedCategoria, setSelectedCategoria] = useState(""); 
+  const { data: dbCourses = [], isLoading } = useCourses();
+  const deleteCourseMutation = useDeleteCourse();
 
-  const calculateLocalProgress = (courseId: string, totalVideos: number): number => {
-    if (totalVideos === 0) return 0;
-    try {
-      const savedData = localStorage.getItem(`itec_course_${courseId}`);
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        const watchedCount = parsed.watched ? parsed.watched.length : 0;
-        return Math.min(100, Math.round((watchedCount / totalVideos) * 100));
-      }
-    } catch {
-      console.error("Error leyendo progreso local");
-    }
-    return 0;
-  };
+  // 🟢 Lógica encapsulada
+  const { filters, filteredCourses } = useCourseSearch(dbCourses);
 
-  const coursesWithProgress: CourseWithLocalProgress[] = useMemo(() => {
-    return dbCourses.map((course: any) => {
-      const courseId = course.id || course._id;
-      return {
-        ...course,
-        localProgress: calculateLocalProgress(courseId, course.videos?.length || 0),
-      };
-    });
-  }, [dbCourses]);
-
-  // Función de borrado súper limpia
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    if (!window.confirm("¿Seguro que deseas eliminar este curso de la base de datos?")) return;
+    e.stopPropagation();
+    if (!window.confirm("¿Seguro que deseas eliminar este curso definitivamente?")) return;
 
-    // Borramos su historial local
     localStorage.removeItem(`itec_course_${id}`);
-    
-    // Disparamos la mutación (React Query hará la petición y refrescará la tabla solo)
     deleteCourseMutation.mutate(id, {
       onError: () => alert("Error al eliminar el curso.")
     });
   };
 
-  const materiasDisponibles = useMemo(() => {
-    const materias = coursesWithProgress.map(c => c.materia).filter(Boolean) as string[];
-    return Array.from(new Set(materias)).sort();
-  }, [coursesWithProgress]);
-
-  const filteredCourses = useMemo(() => {
-    return coursesWithProgress.filter((curso) => {
-      const cursoId = curso.id || (curso as any)._id || "";
-      
-      const matchesSearch = 
-        curso.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (curso.description && curso.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchesMateria = selectedMateria === "" || curso.materia === selectedMateria;
-
-      const isOficial = curso.categoria === 'Oficial' || cursoId.startsWith('seminario') || cursoId.startsWith('analisis');
-      
-      let matchesCategoria = true;
-      if (selectedCategoria === 'Oficial') matchesCategoria = isOficial;
-      if (selectedCategoria === 'Comunidad') matchesCategoria = !isOficial;
-
-      return matchesSearch && matchesMateria && matchesCategoria;
-    });
-  }, [coursesWithProgress, searchQuery, selectedMateria, selectedCategoria]);
-
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto pb-10 relative z-10">
+        
         <PageHeader
-          title="Cursos ITEC"
-          description="Clases de consulta y material audiovisual oficial y no oficial, buscamos poder ayudar de la mejor manera posible a los estudiantes. Continuá donde lo dejaste."
+          title="Campus de Cursos"
+          description="Material audiovisual oficial y comunitario. Potenciá tus estudios, retomá tus clases donde las dejaste y aprendé a tu propio ritmo."
           iconType="playFill"
           colorTheme="blue"
         >
           {isAdmin && (
-            <Button
-              variant="primary"
+            <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-itec-blue/20 text-itec-blue-skye hover:bg-itec-blue hover:text-white border-none transition-all shadow-lg text-sm shrink-0"
+              className="cursor-pointer bg-slate-900/90 border border-white/10 hover:border-sky-500/50 hover:bg-sky-500/10 text-slate-300 hover:text-sky-400 px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg active:scale-95 shrink-0"
             >
-              + Subir Clase / Curso
-            </Button>
+              <div className="w-4 h-4"><Icons type="plus" /></div>
+              Aportar Curso
+            </button>
           )}
         </PageHeader>
 
-        <CourseFilters 
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedMateria={selectedMateria}
-          setSelectedMateria={setSelectedMateria}
-          selectedCategoria={selectedCategoria}
-          setSelectedCategoria={setSelectedCategoria}
-          materiasDisponibles={materiasDisponibles}
-        />
+        <CourseFilters filters={filters} isLoading={isLoading} />
 
         <CourseGrid
           courses={filteredCourses}
@@ -135,7 +66,7 @@ export const CoursesPage: React.FC = () => {
       </div>
 
       {isAdmin && isModalOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-slate-950/90" />}>
           <AddCourseModal
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}

@@ -106,7 +106,7 @@ export const AddResourceModal: React.FC<Props> = ({ isOpen, onClose, isAdmin }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-itec-surface border border-itec-gray rounded-3xl w-full max-w-xl shadow-2xl p-8 relative animate-in zoom-in-95 duration-200 my-8">
         <button onClick={onClose} disabled={isPending} className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-itec-bg border border-itec-gray text-gray-500 hover:text-white transition-colors">✖</button>
         <h2 className="text-2xl font-bold text-white mb-2">Aportar Archivo</h2>

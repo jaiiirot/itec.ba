@@ -41,7 +41,7 @@ export const GlobalAnnouncement: React.FC = () => {
   if (!isVisible || announcements.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="bg-[#0C1014] border border-[#333] rounded-xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
         
         {/* CABECERA INSTITUCIONAL */}

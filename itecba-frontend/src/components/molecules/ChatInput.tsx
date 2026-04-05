@@ -18,7 +18,7 @@ export const ChatInput: React.FC<Props> = ({ onSendMessage, disabled }) => {
   };
 
   return (
-    <div className="p-4 bg-itec-surface/80 backdrop-blur-md border-t border-itec-gray shrink-0 relative z-10">
+    <div className="p-4 bg-itec-surface/90 border-t border-itec-gray shrink-0 relative z-10">
       <form onSubmit={handleSubmit} className="flex items-center gap-3">
         <div className="flex-1 relative">
           <input

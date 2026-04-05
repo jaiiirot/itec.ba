@@ -74,7 +74,7 @@ export const UniversityLinksWidget: React.FC<Props> = ({ isAdmin }) => {
 
       {/* Renderizado perezoso del Modal */}
       {isEditModalOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/60" />}>
           <EditLinksModal 
             isOpen={isEditModalOpen} 
             onClose={() => setIsEditModalOpen(false)} 

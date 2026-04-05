@@ -21,7 +21,7 @@ export const GradeModal: React.FC<Props> = ({ subject, targetStatus, onClose, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         <h3 className="text-xl font-bold text-white mb-1">
           {isAprobada ? 'Aprobar / Promocionar' : 'Regularizar Materia'}

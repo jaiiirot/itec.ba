@@ -34,7 +34,7 @@ export const AddDateModal: React.FC<Props> = ({ isOpen, onClose, onAdd }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
       <div className="bg-itec-surface border border-itec-gray rounded-2xl w-full max-w-md shadow-2xl relative p-6 animate-in zoom-in-95 duration-200">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
           <Icons type="close" className="w-5 h-5" />

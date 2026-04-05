@@ -88,7 +88,7 @@ export const ResourcesPage: React.FC = () => {
           onAddClick={() => setIsAddModalOpen(true)} 
         />
 
-      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />}>
+      <Suspense fallback={<div className="fixed inset-0 z-50 bg-black/60" />}>
         {isAddModalOpen && (
           <AddResourceModal 
             isOpen={isAddModalOpen} 

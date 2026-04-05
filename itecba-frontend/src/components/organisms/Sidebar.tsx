@@ -30,7 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeMobile }) => {
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-itec-sidebar/80 backdrop-blur-sm z-40 md:hidden transition-opacity" 
+          className="fixed inset-0 bg-itec-sidebar/90 z-40 md:hidden transition-opacity" 
           onClick={closeMobile}
         />
       )}
